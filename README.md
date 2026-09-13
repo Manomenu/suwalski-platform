@@ -1,83 +1,121 @@
 # suwalski-platform
 
-Środowisko, na które deployuję. Proxmox udaje tu dostawcę chmury, a wszystko, co w nim
-stoi, jest opisane kodem — żadnego klikania w interfejsie.
+A single-node **k3s cluster on Proxmox**, defined entirely in Terraform. Point it at your
+Proxmox host, run one command, and a few minutes later you have a working Kubernetes
+cluster you can deploy to — and delete and recreate without ceremony.
 
-| Katalog | Co tu jest |
+Built for a homelab: small enough to understand end to end, close enough to how it is done
+in the cloud that the habits transfer.
+
+## What you get
+
+- A Debian VM, created from a cloud image that Proxmox downloads itself — no ISO to fetch,
+  no installer to click through.
+- k3s installed on first boot by cloud-init, at a **pinned version**.
+- Traefik, CoreDNS, metrics-server and a local storage class, all of which k3s brings along.
+- A kubeconfig ready to use from your laptop, and scripts for the everyday bits.
+
+Nothing is clicked in the Proxmox UI. If you change something there by hand, the next
+`apply` will put it back.
+
+## Requirements
+
+| You need | Why |
 | --- | --- |
-| `terraform/` | Maszyna wirtualna i k3s na niej. Warstwa, której Kubernetes nie potrafi zbudować sam. |
-| `docs/` | Decyzje, które nie mieszczą się w komentarzu — m.in. co zrobić, gdy dojdzie drugie środowisko. |
+| A Proxmox host | Reachable over the network. Tested on Proxmox VE 9 |
+| An API token | Terraform talks to Proxmox with it. One command to create — see below |
+| SSH access to the host as `root` | Some operations go over SSH rather than the API |
+| [OpenTofu](https://opentofu.org/) or Terraform | `tofu` in the examples; the `.tf` files are the same either way |
+| [kubectl](https://kubernetes.io/docs/reference/kubectl/) | Talking to the cluster once it is up |
+| [k9s](https://k9scli.io/) *(optional)* | A much nicer way to look around than typing commands |
 
-Konwencje repo (warstwy wartości, kiedy wydzielać moduł, kiedy dzielić pliki) są
-w [`AGENTS.md`](AGENTS.md).
+The repo installs none of these — it describes the cluster, not your workstation.
 
-Aplikacje mieszkają osobno, w [`suwalski-investing-tools`](https://github.com/Manomenu/suwalski-investing-tools).
-To repo **decyduje, co biegnie**; tamto **publikuje obrazy**. Rozpiska faz jest w
-`docs/guide/00-roadmapa.md` tamtego repo.
+## Quick start
 
-## Wymagania
+**1. Create an API token on the Proxmox host.** It is printed once, so copy it somewhere
+safe right away.
 
-| Narzędzie | Do czego |
-| --- | --- |
-| `tofu` | stawianie i zmienianie infrastruktury |
-| `kubectl` | rozmowa z klastrem, skrypty |
-| `k9s` | codzienne zaglądanie do klastra |
+```sh
+ssh root@your-proxmox 'pveum user token add root@pam terraform --privsep 0'
+```
 
-Repo celowo **nie instaluje niczego samo** — opisuje środowisko, którym zarządzasz, a nie
-twoją stację roboczą. Jak je zdobędziesz, zależy od ciebie; u mnie przez home-manager
-(`~/.dotfiles/fedora/nix/home.nix`), bo `flake.lock` przypina wersje, zamiast pozwalać
-aktualizacji systemu przesuwać je bez pytania.
-
-OpenTofu to ten sam język co Terraform — pliki `.tf` są identyczne, różni się nazwa
-polecenia (`tofu` zamiast `terraform`) i licencja. Wszystko, czego się tu nauczysz,
-przenosi się 1:1.
-
-Potrzebny też dostęp do Proxmoksa przez SSH jako `root` (alias `pve` w `~/.ssh/config`)
-z kluczem załadowanym do agenta — provider używa SSH do wgrywania plików, nie tylko API.
-
-## Pierwsze uruchomienie
+**2. Tell Terraform about your setup.** Two files, split by whether the contents are
+secret:
 
 ```sh
 cd terraform
-cp secrets.auto.tfvars.example secrets.auto.tfvars   # uzupełnij token i klucz SSH
-tofu init                                            # pobiera providera, tworzy lockfile
-tofu plan                                            # pokazuje, co zamierza zrobić
-tofu apply                                           # robi to
+cp secrets.auto.tfvars.example secrets.auto.tfvars   # API token + your SSH public key
+$EDITOR proxmox.auto.tfvars                          # node name, storage, IP address
 ```
 
-Wartości są w trzech warstwach: decyzje projektowe jako `default` w `variables.tf`, fakty
-o tej instalacji w `proxmox.auto.tfvars` (w gicie), sekrety w `secrets.auto.tfvars` (poza
-gitem). Oba pliki `.auto.tfvars` wczytują się same — nie trzeba podawać `-var-file`.
+`proxmox.auto.tfvars` is committed on purpose — it is a description of the environment,
+not a personal setting. `secrets.auto.tfvars` is not, and never should be.
 
-`plan` niczego nie zmienia i można go puszczać do woli. Dopiero `apply` dotyka Proxmoksa,
-i najpierw pyta o potwierdzenie.
-
-## Sprawdzenie, że działa
+**3. Build it.**
 
 ```sh
-eval "$(tofu output -raw fetch_kubeconfig)"
-kubectl get nodes           # k3s-1  Ready  control-plane,master
+tofu init      # download the provider
+tofu plan      # see what it intends to do — changes nothing
+tofu apply     # do it (asks before touching anything)
 ```
 
-Pierwszy start trwa kilka minut: maszyna pobiera aktualizacje i instaluje k3s. Postęp
-widać w konsoli maszyny w interfejsie Proxmoksa albo przez `ssh maniumek@192.168.0.119`.
+The first run takes a few minutes: Proxmox downloads the image, the VM boots, and
+cloud-init installs k3s in the background.
 
-## Co jest gdzie w Proxmoksie
+## Check that it worked
 
-| Rzecz | Gdzie |
+```sh
+./scripts/kubeconfig.sh                 # fetch the kubeconfig and test it
+source ./scripts/kubectl/setup.sh       # point kubectl at this cluster
+kubectl get nodes
+```
+
+```
+NAME    STATUS   ROLES           VERSION
+k3s-1   Ready    control-plane   v1.36.4+k3s1
+```
+
+If the node has not appeared yet, cloud-init is probably still working. It leaves a marker
+behind when it finishes:
+
+```sh
+ssh you@your-vm 'ls /var/lib/cloud/k3s-ready'
+```
+
+## Everyday commands
+
+| Command | What it does |
 | --- | --- |
-| Obraz Debiana | storage `local`, sekcja ISO |
-| Plik cloud-init | storage `local`, snippety (`/var/lib/vz/snippets`) |
-| Dysk maszyny | storage `local-lvm` |
-| Maszyna | ID 119, węzeł `aoostar`, adres 192.168.0.119 |
+| `./scripts/tofu/plan.sh` | Show what would change |
+| `./scripts/tofu/apply.sh` | Apply it. `--yes-man` skips the confirmation |
+| `./scripts/tofu/validate-and-format.sh` | Format and check the files — offline, quick |
+| `./scripts/kubeconfig.sh` | Fetch the kubeconfig and verify it works |
+| `./scripts/kubectl/setup.sh` | Set `KUBECONFIG`, for now and for good |
+| `./scripts/kubectl/list-nodes.sh` | Nodes and how busy they are |
 
-## Zasady
+## Making it yours
 
-- **Nie klikaj w interfejsie Proxmoksa.** Zmiana zrobiona ręcznie zniknie przy najbliższym
-  `apply`, a do tego czasu kod będzie kłamał o stanie środowiska.
-- **Wersje są przypięte** — k3s i provider. Ta sama reguła co przy obrazach kontenerów:
-  środowisko odtwarzalne bije środowisko zawsze najnowsze.
-- **`secrets.auto.tfvars` nigdy nie trafia do gita.** Token API to hasło do całego
-  Proxmoksa. `proxmox.auto.tfvars` przeciwnie — ma tam być, bo opisuje środowisko.
-- **Stan (`*.tfstate`) też nie.** Opisuje żywą infrastrukturę i bywa w nim więcej, niż
-  widać w plikach `.tf`.
+Most of what you will want to change lives in `terraform/proxmox.auto.tfvars` — the node
+name, which storage to use, the IP address, the VM id. Sizing (memory, cores, disk) and
+the k3s version have sensible defaults in `terraform/variables.tf`; override them in the
+same file if you disagree.
+
+## Digging deeper
+
+- [`AGENTS.md`](AGENTS.md) — conventions: where values belong, when to extract a module,
+  how the files are split.
+- [`docs/multiple_env.md`](docs/multiple_env.md) — what to do when a second environment
+  appears, and why a directory beats a workspace.
+
+Both are written in Polish; the code and this page are not.
+
+## Related
+
+Applications live separately, in
+[`suwalski-investing-tools`](https://github.com/Manomenu/suwalski-investing-tools). That
+repo publishes container images; this one decides what runs.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
