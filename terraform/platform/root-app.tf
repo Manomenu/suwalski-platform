@@ -13,12 +13,24 @@ resource "terraform_data" "root_app" {
   triggers_replace = [local.root_app_manifest]
 
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig '${local.kubeconfig}' apply -f -"
+    # Manifest i ścieżka wchodzą przez zmienne środowiskowe, nie przez sklejanie napisów.
+    # Dzięki temu nic nie trafia do listy procesów i nie ma gdzie pomylić cudzysłowów —
+    # wcześniejsza wersja sklejała ścieżkę z apostrofami, które `kubectl` brał za część
+    # nazwy pliku i zgłaszał „no such file" przy istniejącym pliku.
+    command = <<-EOT
+      set -euo pipefail
+      test -f "$KUBECONFIG_PATH" || {
+        echo "brak kubeconfiga: $KUBECONFIG_PATH" >&2
+        echo "  source ../../scripts/cluster/kubectl-setup.sh" >&2
+        exit 1
+      }
+      printf '%s' "$MANIFEST" | kubectl --kubeconfig "$KUBECONFIG_PATH" apply -f -
+    EOT
+
     environment = {
-      MANIFEST = local.root_app_manifest
+      MANIFEST        = local.root_app_manifest
+      KUBECONFIG_PATH = local.kubeconfig
     }
-    # Manifest wchodzi standardowym wejściem, więc nie ląduje w liście procesów.
-    interpreter = ["/usr/bin/env", "bash", "-c", "printf '%s' \"$MANIFEST\" | $0"]
   }
 
   depends_on = [helm_release.argocd]
