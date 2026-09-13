@@ -27,3 +27,17 @@ variable "enable_notifications" {
   type        = bool
   default     = false
 }
+
+# ── Aplikacja korzeniowa ──────────────────────────────────────────────────────
+
+variable "platform_repo_url" {
+  description = "To repo. Argo musi je czytać przez sieć, więc adres publiczny, nie ścieżka lokalna."
+  type        = string
+  default     = "https://github.com/Manomenu/suwalski-platform.git"
+}
+
+variable "platform_repo_revision" {
+  description = "Gałąź, z której Argo bierze listę aplikacji."
+  type        = string
+  default     = "master"
+}

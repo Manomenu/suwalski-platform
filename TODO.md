@@ -5,6 +5,42 @@ zapisujemy tylko, o co chodziło i dlaczego, żeby pomysł nie zginął.
 
 ---
 
+## Sekrety bez ręcznego zarządzania
+
+**Status:** zapisane. Obecne rozwiązanie jest **świadomie przejściowe**.
+
+Dziś sekrety leżą otwartym tekstem w `.secrets.env` (poza gitem), a `scripts/setup.sh`
+rozprowadza je stamtąd do `terraform/cluster/secrets.auto.tfvars` i do Secretów
+w klastrze. Działa, jest idempotentne i wystarcza przy trzech wartościach. **Przy
+dziesięciu zacznie męczyć** — a przy odtwarzaniu klastra od zera trzeba je mieć gdzieś
+z boku, co znaczy „w kolejnym pliku, o którym trzeba pamiętać".
+
+### Czego szukamy
+
+Żeby sekret mógł **leżeć w gicie** w postaci zaszyfrowanej, a odszyfrowywał go ten, kto ma
+klucz. Wtedy odtworzenie środowiska to `git clone` plus jeden klucz, zamiast polowania na
+wartości.
+
+### Kandydaci, od najlżejszego
+
+| | Co daje | Koszt |
+| --- | --- | --- |
+| **SOPS + age** | Szyfruje **pliki** — więc obejmuje i `tfvars`, i manifesty Kubernetesa. Jeden klucz, zero komponentów w klastrze. | Trzeba zabezpieczyć klucz `age` i pamiętać o nim przy nowej maszynie. |
+| **Sealed Secrets** | Kontroler w klastrze; szyfrujesz jego kluczem publicznym, wynik idzie do gita. | Obejmuje **tylko** Secrety Kubernetesa — `tfvars` zostają na boku. Dodatkowy pod. |
+| **External Secrets** | Pobiera sekrety z zewnętrznego magazynu do klastra. | Wymaga tego magazynu, czyli problem przesuwa się piętro wyżej. |
+| **Vault** | Pełny magazyn z politykami, rotacją, audytem. | Ciężki: własny stan, odpieczętowanie po restarcie, kopie zapasowe. Przy jednym użytkowniku to armata na muchę. |
+
+**Skłaniam się do SOPS + age** — jako jedyny obejmuje oba miejsca, w których trzymamy
+sekrety, i nie dokłada niczego do klastra. Vault ma sens, gdyby pojawili się inni ludzie
+albo potrzeba rotacji.
+
+### Do rozstrzygnięcia przy realizacji
+
+- gdzie trzymać klucz `age`, żeby przetrwał utratę laptopa, ale nie leżał w repo,
+- czy `setup.sh` zostaje jako warstwa wygody, czy znika na rzecz `sops -d`,
+- czy przy okazji nie przenieść `SEC_USER_AGENT` do zwykłej ConfigMapy — to adres
+  e-mail, a nie hasło, więc traktowanie go jak sekretu jest może na wyrost.
+
 ## Strona startowa z linkami do usług
 
 **Status:** zapisane, nieprzeanalizowane.

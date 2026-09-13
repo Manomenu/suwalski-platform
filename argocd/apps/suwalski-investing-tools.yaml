@@ -1,0 +1,39 @@
+# Co ma biec w klastrze. Argo obserwuje ten katalog i wprowadza zmiany samo.
+#
+# Podział odpowiedzialności, ustalony w roadmapie:
+#   repo z kodem  — publikuje obrazy i opisuje KSZTAŁT wdrożenia (chart)
+#   to repo       — decyduje, KTÓRA WERSJA biegnie
+#
+# Dlatego `targetRevision` wskazuje gałąź charta, a `image.tag` niżej jest przypięty
+# do konkretnego obrazu. Historia tego pliku w gicie JEST historią wdrożeń.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: suwalski-investing-tools
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-investing-tools.git
+    targetRevision: master
+    path: deploy/chart
+    helm:
+      parameters:
+        # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
+        # W Fazie 6 podbije ją CI commitem; dziś zmieniasz ją ręcznie.
+        - name: image.tag
+          value: sha-01cb856
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  syncPolicy:
+    automated:
+      # Wyrównuj, gdy git się zmieni. Bez tego Argo tylko pokazywałoby „OutOfSync"
+      # i czekało na kliknięcie.
+      selfHeal: true
+      # Kasuj obiekty, które zniknęły z gita — inaczej po usunięciu czegoś z charta
+      # zostawałoby ono w klastrze na zawsze. PVC jest z tego wyłączony adnotacją.
+      prune: true
