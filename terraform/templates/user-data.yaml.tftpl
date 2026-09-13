@@ -1,0 +1,51 @@
+#cloud-config
+# Wykonywane raz, przy pierwszym starcie maszyny. Od tego momentu maszyna jest
+# jednorazowa w tym sensie, że skasowanie jej i `tofu apply` odtwarza ją identycznie —
+# nic tu nie jest klikane ręcznie.
+
+hostname: ${hostname}
+fqdn: ${hostname}
+manage_etc_hosts: true
+
+users:
+  - name: ${username}
+    groups: [sudo]
+    shell: /bin/bash
+    # Konto służy do administracji przez SSH kluczem; hasła nie ma, więc sudo nie może
+    # o nie zapytać.
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: ${ssh_keys}
+
+# Logowanie hasłem wyłączone — jedyną drogą jest klucz.
+ssh_pwauth: false
+disable_root: true
+
+package_update: true
+packages:
+  # Pozwala Proxmoksowi widzieć adres IP i czysto wyłączać maszynę zamiast ucinać prąd.
+  - qemu-guest-agent
+  - curl
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+
+  # k3s trzyma dane w /var/lib/rancher. Dysk jest jeden, więc nie ma tu nic do montowania,
+  # ale warto wiedzieć, gdzie to leży, gdy zabraknie miejsca.
+  - |
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="${k3s_version}" \
+      sh -s - server \
+        --node-ip ${node_ip} \
+        --tls-san ${node_ip} \
+        --write-kubeconfig-mode 0644
+
+  # Kopia kubeconfiga w katalogu użytkownika, z adresem maszyny zamiast 127.0.0.1 —
+  # ten plik da się zabrać na laptopa i użyć bez edycji.
+  - mkdir -p /home/${username}/.kube
+  - cp /etc/rancher/k3s/k3s.yaml /home/${username}/.kube/config
+  - sed -i "s|127.0.0.1|${node_ip}|" /home/${username}/.kube/config
+  - chown -R ${username}:${username} /home/${username}/.kube
+  - chmod 600 /home/${username}/.kube/config
+
+  # Znacznik, na który czeka Terraform. Powstaje dopiero, gdy wszystko powyżej przeszło.
+  - touch /var/lib/cloud/k3s-ready
