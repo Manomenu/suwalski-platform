@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Postaw albo zaktualizuj infrastrukturę. Pokazuje plan i pyta o zgodę.
 #
+#   ./scripts/tofu/apply.sh                maszyna i k3s
+#   ./scripts/tofu/apply.sh platform       Argo CD
+#
 # Domyślnie pyta o zgodę — to zabezpieczenie przed pomyłką, nie formalność.
 # --yes-man pomija pytanie (przekłada się na -auto-approve). Nazwa jest celowo
 # niewygodna: ma być widać w historii powłoki, że ktoś świadomie wyłączył hamulec.
@@ -14,7 +17,13 @@ for arg in "$@"; do
     esac
 done
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TF="$ROOT/terraform"
+# Która konfiguracja: cluster (maszyna i k3s) czy platform (Argo CD).
+# Domyślnie cluster, bo od niego się zaczyna i on się zmienia rzadziej.
+CEL="cluster"
+case "${1:-}" in
+    cluster|platform) CEL="$1"; shift ;;
+esac
+TF="$ROOT/terraform/$CEL"
 
 command -v tofu >/dev/null || {
     echo "brak tofu — jest w ~/.dotfiles/fedora/nix/home.nix, uruchom home-manager switch" >&2
@@ -26,7 +35,7 @@ command -v tofu >/dev/null || {
     exit 1
 }
 
-[ -f "$TF/secrets.auto.tfvars" ] || {
+[ "$CEL" != "cluster" ] || [ -f "$TF/secrets.auto.tfvars" ] || {
     echo "brak $TF/secrets.auto.tfvars" >&2
     echo "  cp terraform/secrets.auto.tfvars.example terraform/secrets.auto.tfvars" >&2
     echo "  i uzupełnij token API oraz klucz SSH" >&2

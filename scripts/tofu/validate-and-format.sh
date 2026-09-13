@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# Sformatuj pliki i sprawdź je, nie łącząc się z Proxmoksem.
+# Sformatuj pliki i sprawdź je, nie łącząc się z niczym.
+#
+#   ./scripts/tofu/validate-and-format.sh            cluster
+#   ./scripts/tofu/validate-and-format.sh platform   platform
 # Puszczaj przed każdym commitem — obie rzeczy są lokalne i trwają sekundę.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TF="$ROOT/terraform"
+# Która konfiguracja: cluster (maszyna i k3s) czy platform (Argo CD).
+# Domyślnie cluster, bo od niego się zaczyna i on się zmienia rzadziej.
+CEL="cluster"
+case "${1:-}" in
+    cluster|platform) CEL="$1"; shift ;;
+esac
+TF="$ROOT/terraform/$CEL"
 
 command -v tofu >/dev/null || {
     echo "brak tofu — jest w ~/.dotfiles/fedora/nix/home.nix, uruchom home-manager switch" >&2
