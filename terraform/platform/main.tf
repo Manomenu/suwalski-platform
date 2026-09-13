@@ -36,7 +36,11 @@ resource "helm_release" "argocd" {
 # traefik ma robić, zamiast szukać tego w wartościach charta.
 resource "kubernetes_ingress_v1" "argocd" {
   metadata {
-    name      = "argocd-server"
+    # Własna nazwa tego obiektu, niezwiązana z niczym innym. Celowo NIE „argocd-server",
+    # bo tak nazywa się Usługa w backendzie niżej — dwie różne rzeczy o tej samej nazwie
+    # czytałoby się jak odwołanie, którym nie są. Przy okazji nie zderzy się z Ingressem
+    # z charta, gdyby kiedyś został włączony.
+    name      = "argocd-ui"
     namespace = kubernetes_namespace.argocd.metadata[0].name
   }
 
@@ -55,7 +59,10 @@ resource "kubernetes_ingress_v1" "argocd" {
 
           backend {
             service {
-              name = "argocd-server"
+              # Chart nazywa swoje zasoby wzorcem <nazwa-wydania>-<komponent>, więc nazwa
+              # usługi wynika z nazwy wydania. Wyliczamy ją zamiast wpisywać: inaczej
+              # zmiana nazwy wydania cicho rozspoiłaby Ingress od usługi.
+              name = "${helm_release.argocd.name}-server"
               port { number = 80 }
             }
           }
@@ -64,5 +71,6 @@ resource "kubernetes_ingress_v1" "argocd" {
     }
   }
 
-  depends_on = [helm_release.argocd]
+  # depends_on niepotrzebne: odwołanie do helm_release.argocd.name w backendzie samo
+  # ustawia kolejność.
 }

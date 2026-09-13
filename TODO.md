@@ -5,6 +5,38 @@ zapisujemy tylko, o co chodziło i dlaczego, żeby pomysł nie zginął.
 
 ---
 
+## Strona startowa z linkami do usług
+
+**Status:** zapisane, nieprzeanalizowane.
+
+Jedna strona pod `http://suwalski.internal` z odnośnikami do wszystkiego, co stoi
+w domu — Argo CD, NAS, AdGuard, Proxmox, i co tam jeszcze dojdzie. Konfigurowana
+deklaratywnie, plikiem w repo, nie klikaniem.
+
+### Czemu to nie jest tylko ozdoba
+
+Dziś adresy usług siedzą w zakładkach przeglądarki i w głowie. Przy każdej nowej usłudze
+dochodzi kolejny, a przy zmianie adresu żaden się nie aktualizuje. Strona startowa
+generowana z konfiguracji to jedno miejsce, które zawsze mówi prawdę.
+
+### Do rozstrzygnięcia
+
+- **Czym.** Kandydaci to narzędzia konfigurowane plikami YAML (Homepage, Homer). Odpadają
+  te, w których układ klika się w interfejsie — to dokładnie to, od czego uciekamy.
+- **Gdzie.** To jest **aplikacja**, nie infrastruktura, więc jej miejsce jest w klastrze
+  i pod Argo CD, a nie w Terraformie. Byłby to dobry drugi test pętli GitOps po Fazie 5.
+- **Czy da się bez ręcznej listy.** Część tych narzędzi potrafi **wyczytać usługi
+  z Ingressów** w klastrze i pokazać je automatycznie. Wtedy nowa usługa pojawia się na
+  stronie sama, tak jak dziś sama dostaje nazwę dzięki wpisowi wieloznacznemu. Rzeczy
+  spoza klastra (NAS, Proxmox, AdGuard) i tak trzeba by wypisać ręcznie — ale raz.
+
+### Haczyk z DNS
+
+`suwalski.internal` to **goła domena**, więc wpis wieloznaczny `*.k8s.suwalski.internal`
+jej nie obejmuje. Potrzebny osobny wpis A w AdGuardzie — i to drugi raz, kiedy trzeba tam
+zajrzeć. Alternatywa: umieścić stronę pod `home.k8s.suwalski.internal` i nie dotykać DNS-u
+wcale, kosztem dłuższego adresu.
+
 ## Cały Proxmox jako kod, nie tylko jedna maszyna
 
 **Status:** zapisane, nieprzeanalizowane. Nic nie było badane pod tym kątem.

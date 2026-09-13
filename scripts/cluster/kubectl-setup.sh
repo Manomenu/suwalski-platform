@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Ustaw KUBECONFIG — na stałe i, jeśli skrypt zostanie zasourcowany, od razu.
 #
-#   source ./scripts/kubectl/setup.sh   ustawia też w bieżącej powłoce
-#   ./scripts/kubectl/setup.sh          tylko na stałe, bieżąca powłoka bez zmian
+#   source ./scripts/cluster/kubectl-setup.sh   pobiera, ustawia tu i na stałe
+#   ./scripts/cluster/kubectl-setup.sh          tylko na stałe, bieżąca powłoka bez zmian
 #
 # Ta różnica nie jest niedoróbką: proces potomny fizycznie nie może ustawić zmiennej
 # w powłoce rodzica. Jedyny sposób, żeby dotknąć bieżącej sesji, to wykonać się w niej.
@@ -25,6 +25,19 @@ _kube_root="$(cd "$(dirname "$_kube_self")/../.." && pwd)"
 _kube_file="$_kube_root/kubeconfig"
 _kube_frag="$HOME/.dotfiles/fedora/.config/zsh/rc.d/80-kube.zsh"
 
+# ── pobranie, jeśli trzeba ────────────────────────────────────────────────────
+# Wchłonięte z dawnego kubeconfig.sh: osobny skrypt tylko po to, żeby zrobić jedno scp,
+# był jednym krokiem za dużo.
+if [ ! -f "$_kube_file" ]; then
+    _kube_tf="$_kube_root/terraform/cluster"
+    _kube_ip="$(cd "$_kube_tf" && tofu output -raw vm_ip 2>/dev/null || true)"
+    _kube_user="$(cd "$_kube_tf" && tofu output -raw vm_user 2>/dev/null || echo maniumek)"
+    if [ -n "$_kube_ip" ]; then
+        echo "pobieram kubeconfig z $_kube_user@$_kube_ip"
+        scp -q "$_kube_user@$_kube_ip:~/.kube/config" "$_kube_file" && chmod 600 "$_kube_file"
+    fi
+fi
+
 # ── bieżąca sesja ─────────────────────────────────────────────────────────────
 if [ "$_kube_sourced" -eq 1 ]; then
     export KUBECONFIG="$_kube_file"
@@ -32,7 +45,7 @@ if [ "$_kube_sourced" -eq 1 ]; then
 fi
 
 # ── na stałe ──────────────────────────────────────────────────────────────────
-_kube_body="# Klaster k3s z suwalski-platform. Plik generowany przez scripts/kubectl/setup.sh.
+_kube_body="# Klaster k3s z suwalski-platform. Plik generowany przez scripts/cluster/kubectl-setup.sh.
 # Ścieżka jest bezwzględna, więc kubectl działa z dowolnego katalogu.
 export KUBECONFIG=\"$_kube_file\""
 
@@ -76,8 +89,8 @@ fi
 
 [ -f "$_kube_file" ] || {
     echo
-    echo "  uwaga: $_kube_file jeszcze nie istnieje"
-    echo "    $_kube_root/scripts/kubeconfig.sh"
+    echo "  uwaga: nie udało się pobrać $_kube_file"
+    echo "    czy maszyna stoi? $_kube_root/scripts/cluster/tofu-plan.sh"
 }
 
-unset _kube_sourced _kube_self _kube_root _kube_file _kube_frag _kube_body _kube_have_dotfiles _kube_link
+unset _kube_sourced _kube_self _kube_root _kube_file _kube_frag _kube_body _kube_have_dotfiles _kube_link _kube_tf _kube_ip _kube_user
