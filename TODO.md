@@ -29,6 +29,40 @@ Do przemyślenia przy okazji:
 - co się wtedy dzieje z dostępem z laptopa: przez router, przez Tailscale, a może jedno
   i drugie zależnie od tego, do czego.
 
+### Deklaratywny DNS i odejście od AdGuarda
+
+**Osobne zadanie, do zrobienia w tym repo** — `terraform/dns/`.
+
+Dziś wpisy DNS klika się w interfejsie AdGuarda (LXC 115). Cel: opisać strefę kodem, tak
+jak resztę infrastruktury, i zmigrować z AdGuarda albo zostawić go wyłącznie do blokowania
+reklam.
+
+Ustalenia, które już zapadły przy Fazie 4:
+
+- **DNS zostaje poza klastrem.** Jeśli mieszka w klastrze, a klaster leży, nie rozwiążesz
+  nazw, żeby go zdiagnozować. Cały dom zależy od tego DNS-u. LXC obok klastra to właściwe
+  miejsce.
+- **Należy do Terraforma, nie do Argo CD.** DNS to infrastruktura, nie aplikacja. Argo ma
+  pilnować tego, co biegnie w klastrze, i tyle.
+- **„Dwa DNS-y" już istnieją i to nie problem.** AdGuard obsługuje sieć domową, CoreDNS
+  strefę `*.svc.cluster.local` w klastrze. Współistnieją, bo odpowiadają za rozłączne
+  zbiory nazw. Groźne byłyby dwa źródła prawdy dla *tych samych* nazw.
+- **Wpis wieloznaczny załatwia 90% problemu bez migracji.** `*.k8s.suwalski.internal` na
+  adres węzła sprawia, że nowa usługa nie wymaga dotykania DNS-u — resztę rozstrzyga
+  Ingress. Faza 4 z tego korzysta; migracja jest ulepszeniem, nie warunkiem.
+- **Nazewnictwo: zostajemy przy `.internal`.** ICANN zarezerwowało tę końcówkę do użytku
+  prywatnego. `.local` jest zajęte przez mDNS i potrafi psuć rozwiązywanie nazw.
+
+Do rozstrzygnięcia przy realizacji: czy AdGuard ma API nadające się do Terraforma, czy
+prościej zamienić go na serwer sterowany plikiem konfiguracyjnym.
+
+### Certyfikaty dla nazw wewnętrznych
+
+Przy końcówce `.internal` **nie da się** dostać certyfikatu z Let's Encrypt — wystawiają
+tylko dla domen realnie posiadanych. Dopóki chodzimy po HTTP w sieci domowej, nie ma
+problemu. Gdyby kiedyś przeszkadzało ostrzeżenie przeglądarki, są dwie drogi: własne CA
+dodane do zaufanych na urządzeniach, albo prawdziwa domena z uwierzytelnianiem DNS-01.
+
 ### Wątek poboczny, na razie czysta spekulacja
 
 Dziś ścieżki DNS do usług ustawiane są **ręcznie w AdGuardzie** (LXC 115) i stamtąd kierują
