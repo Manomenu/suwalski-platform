@@ -1,0 +1,22 @@
+# Stan Terraforma opisuje żywą infrastrukturę i zawiera wartości, których nie chcemy
+# publikować. Lockfile providerów jest odwrotnie — ma być commitowany, bo to on
+# gwarantuje, że wszyscy dostają tę samą wersję.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Wartości zmiennych. Fakty o środowisku (proxmox.auto.tfvars) mają być w repo —
+# to one opisują, co gdzie stoi. Poza gitem zostają wyłącznie sekrety.
+secrets.auto.tfvars
+terraform.tfvars
+*.tfvars.json
+
+# Kubeconfig pobierany z klastra.
+kubeconfig
+*.kubeconfig
