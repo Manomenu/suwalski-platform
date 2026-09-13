@@ -66,8 +66,8 @@ cloud-init installs k3s in the background.
 ## Check that it worked
 
 ```sh
-./scripts/kubeconfig.sh                 # fetch the kubeconfig and test it
-source ./scripts/kubectl/setup.sh       # point kubectl at this cluster
+source ./scripts/cluster/kubectl-setup.sh                 # fetch the kubeconfig and test it
+source ./scripts/cluster/kubectl-setup.sh       # point kubectl at this cluster
 kubectl get nodes
 ```
 
@@ -87,12 +87,17 @@ ssh you@your-vm 'ls /var/lib/cloud/k3s-ready'
 
 | Command | What it does |
 | --- | --- |
-| `./scripts/tofu/plan.sh` | Show what would change |
-| `./scripts/tofu/apply.sh` | Apply it. `--yes-man` skips the confirmation |
-| `./scripts/tofu/validate-and-format.sh` | Format and check the files — offline, quick |
-| `./scripts/kubeconfig.sh` | Fetch the kubeconfig and verify it works |
-| `./scripts/kubectl/setup.sh` | Set `KUBECONFIG`, for now and for good |
-| `./scripts/kubectl/list-nodes.sh` | Nodes and how busy they are |
+| `./scripts/cluster/tofu-plan.sh` | Show what would change on Proxmox |
+| `./scripts/cluster/tofu-apply.sh` | Apply it. `--yes-man` skips the confirmation |
+| `./scripts/cluster/tofu-validate.sh` | Format and check the files — offline, quick |
+| `source ./scripts/cluster/kubectl-setup.sh` | Fetch the kubeconfig, point `kubectl` at it, make it stick |
+| `./scripts/platform/tofu-plan.sh` | Same three, for what runs *inside* the cluster |
+| `./scripts/platform/tofu-apply.sh` | |
+| `./scripts/platform/tofu-validate.sh` | |
+| `./scripts/platform/argocd-password.sh` | Argo CD's initial admin password, decoded |
+| `./scripts/k9s/logs.sh` | k9s's own log — the only place it explains itself |
+
+Looking *at* the cluster is k9s's job, not a script's: `:po`, `:ing`, `:applications`.
 
 ## Making it yours
 

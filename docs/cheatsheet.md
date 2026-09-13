@@ -11,12 +11,11 @@ Nie trzeba pamiętać ścieżek ani flag — od tego są.
 
 | Polecenie | Co robi |
 | --- | --- |
-| `./scripts/tofu/validate-and-format.sh` | `fmt` + `validate`. Lokalnie, bez dotykania Proxmoksa. Przed każdym commitem. |
-| `./scripts/tofu/plan.sh` | Pokazuje, co by się zmieniło. Niczego nie zmienia. |
-| `./scripts/tofu/apply.sh` | Robi to. `--yes-man` pomija pytanie o zgodę. |
-| `./scripts/kubeconfig.sh` | Pobiera kubeconfig z węzła i od razu sprawdza, że działa. |
-| `source ./scripts/kubectl/setup.sh` | Ustawia `KUBECONFIG` — w tej powłoce i na stałe. Musi być `source`. |
-| `./scripts/kubectl/list-nodes.sh` | Węzły plus obciążenie. Działa nawet bez `KUBECONFIG`. |
+| `./scripts/cluster/tofu-validate.sh` | `fmt` + `validate`. Lokalnie, bez dotykania Proxmoksa. Przed każdym commitem. |
+| `./scripts/cluster/tofu-plan.sh` | Pokazuje, co by się zmieniło. Niczego nie zmienia. |
+| `./scripts/cluster/tofu-apply.sh` | Robi to. `--yes-man` pomija pytanie o zgodę. |
+| `source ./scripts/cluster/kubectl-setup.sh` | Pobiera kubeconfig z węzła i od razu sprawdza, że działa. |
+| `source ./scripts/cluster/kubectl-setup.sh` | Ustawia `KUBECONFIG` — w tej powłoce i na stałe. Musi być `source`. |
 | `./scripts/k9s/logs.sh [-f]` | Log k9s — jedyne miejsce, gdzie tłumaczy się ze swoich decyzji. |
 
 ---
