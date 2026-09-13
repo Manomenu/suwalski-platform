@@ -107,6 +107,9 @@ same file if you disagree.
   how the files are split.
 - [`docs/multiple_env.md`](docs/multiple_env.md) — what to do when a second environment
   appears, and why a directory beats a workspace.
+- [`docs/cheatsheet.md`](docs/cheatsheet.md) — every command this repo uses, in one
+  place: tofu, kubectl, k9s, Proxmox.
+- [`TODO.md`](TODO.md) — ideas parked for later, with the reasoning behind them.
 
 Both are written in Polish; the code and this page are not.
 
