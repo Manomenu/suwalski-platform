@@ -23,7 +23,7 @@ spec:
         # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
         # W Fazie 6 podbije ją CI commitem; dziś zmieniasz ją ręcznie.
         - name: image.tag
-          value: sha-01cb856
+          value: sha-1c52a77
 
   destination:
     server: https://kubernetes.default.svc
