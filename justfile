@@ -23,6 +23,10 @@ mod cluster '.just/cluster.just'
 [group('warstwy')]
 mod platform '.just/platform.just'
 
+[doc('Cloudflare: tunel, DNS i logowanie (Access) — wejście z internetu')]
+[group('warstwy')]
+mod edge '.just/edge.just'
+
 [doc('Argo CD: hasło i stan aplikacji')]
 [group('operacje')]
 mod argo '.just/argo.just'

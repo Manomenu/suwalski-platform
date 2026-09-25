@@ -1,7 +1,7 @@
 # Aplikacja korzeniowa — ostatnia rzecz, jaką Terraform robi w tym klastrze.
 #
-# Wskazuje na katalog argocd/apps/ w tym repo. Od tej chwili nową aplikację dodaje się
-# PLIKIEM W GICIE, a nie poleceniem. To wzorzec „app of apps": jeden obiekt postawiony
+# Wskazuje na katalog argocd/apps/ w tym repo (z podkatalogami platform/ i projects/ —
+# stąd `recurse`). Od tej chwili nową aplikację dodaje się PLIKIEM W GICIE, a nie poleceniem. To wzorzec „app of apps": jeden obiekt postawiony
 # ręką, reszta rozmnaża się sama.
 #
 # Dlaczego manifestem, a nie zasobem providera kubernetes: Application to typ wniesiony

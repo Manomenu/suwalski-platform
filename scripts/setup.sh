@@ -1,61 +1,24 @@
 #!/usr/bin/env bash
-# Przygotowanie świeżo sklonowanego repozytorium. Idempotentne — uruchamiaj ile chcesz.
+# Przygotowanie PLATFORMY na świeżo sklonowanym repo. Idempotentne — uruchamiaj ile chcesz.
 #
-# Kroki: narzędzia (just) → sekrety → ich rozprowadzenie.
+# Kroki: narzędzia (just) → sekrety platformy → ich rozprowadzenie.
 #
-# Jedno źródło prawdy dla sekretów: .secrets.env w korzeniu repo, poza gitem.
-# Ten skrypt pyta o wartości i ROZPROWADZA je tam, gdzie są potrzebne:
+# Tylko to, co wspólne dla całego klastra. Sekrety projektów (maile osób z dostępem, hasła
+# aplikacji) mają własne skrypty w scripts/projects/<projekt>/[<środowisko>/]setup.sh —
+# ten skrypt ich nie dotyka.
 #
-#   .secrets.env  ──┬──>  terraform/cluster/secrets.auto.tfvars
-#                   └──>  Secret w klastrze (dla aplikacji)
+#   .secrets/platform.env ──┬──>  terraform/cluster/secrets.auto.tfvars   (Proxmox, SSH)
+#                           ├──>  terraform/edge/secrets.auto.tfvars      (token Cloudflare)
+#                           ├──>  terraform/edge/access/admin.json        (grupa „admin”: Ty)
+#                           └──>  Secret cloudflared-token w klastrze*
 #
-# Dzięki temu sekret dzielony między warstwami podaje się RAZ. Kopie w docelowych
-# miejscach są generowane, nigdy edytowane ręcznie.
+#   * token tunelu nie pochodzi z .secrets/, tylko z wyjścia terraform/edge — powstaje
+#     przy `just edge apply`. Dlatego po pierwszym apply edge uruchom ten skrypt jeszcze raz.
 #
 # ⚠ Przejściowe. Docelowo sekrety mają leżeć w gicie zaszyfrowane — patrz TODO.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ZRODLO="$ROOT/.secrets.env"
-
-# ── odczyt tego, co już mamy ──────────────────────────────────────────────────
-declare -A OBECNE=()
-if [ -f "$ZRODLO" ]; then
-    while IFS='=' read -r k v; do
-        [[ "$k" =~ ^[A-Z_]+$ ]] || continue
-        OBECNE["$k"]="${v%\"}"; OBECNE["$k"]="${OBECNE[$k]#\"}"
-    done < "$ZRODLO"
-fi
-
-zamaskuj() {
-    local v="$1"
-    [ ${#v} -le 8 ] && { printf '********'; return; }
-    printf '%s…%s' "${v:0:4}" "${v: -4}"
-}
-
-# zapytaj NAZWA "opis" [domyślna-jeśli-brak] [cichy]
-zapytaj() {
-    local nazwa="$1" opis="$2" gdy_brak="${3:-}" cichy="${4:-}" stara="${OBECNE[$1]:-}" nowa=""
-    echo
-    echo "  $opis"
-    if [ -n "$stara" ]; then
-        echo "  obecna: $(zamaskuj "$stara")   [Enter = bez zmian]"
-    elif [ -n "$gdy_brak" ]; then
-        echo "  proponowana: $(zamaskuj "$gdy_brak")   [Enter = przyjmij]"
-        stara="$gdy_brak"
-    else
-        echo "  wymagana — nie była jeszcze podana"
-    fi
-    if [ -n "$cichy" ]; then
-        read -rsp "  > " nowa; echo
-    else
-        read -rp "  > " nowa
-    fi
-    if [ -z "$nowa" ]; then
-        [ -n "$stara" ] || { echo "  ta wartość jest wymagana" >&2; return 1; }
-        nowa="$stara"
-    fi
-    OBECNE["$nazwa"]="$nowa"
-}
+source "$ROOT/scripts/.internal/lib.sh"
 
 # ── narzędzia ─────────────────────────────────────────────────────────────────
 # Najpierw, bo wszystko po setupie idzie przez `just`. Brak just nie blokuje sekretów —
@@ -64,9 +27,12 @@ echo "== Narzędzia =="
 "$ROOT/scripts/.internal/install-just.sh" \
     || echo "  uwaga: bez just nie zadziała żadne \`just ...\` — sekrety rozprowadzam i tak" >&2
 
+# ── sekrety platformy ─────────────────────────────────────────────────────────
 echo
-echo "== Sekrety =="
-echo "  źródło: $ZRODLO"
+echo "== Sekrety platformy =="
+migruj_stary_env
+wczytaj_zrodlo platform
+echo "  źródło: ${ZRODLO#"$ROOT"/}"
 
 zapytaj PROXMOX_API_TOKEN \
     "Token API Proxmoksa (root@pam!nazwa=UUID). Tworzy go: ssh pve 'pveum user token add root@pam terraform --privsep 0'" \
@@ -78,62 +44,66 @@ zapytaj SSH_PUBLIC_KEY \
     "Klucz publiczny wpuszczany na maszynę z k3s" \
     "$_klucz"
 
-zapytaj SEC_USER_AGENT \
-    "Identyfikacja dla SEC EDGAR — 'Imię Nazwisko adres@email'. Bez tego SEC odrzuca żądania." \
+zapytaj CLOUDFLARE_API_TOKEN \
+    "Token API Cloudflare dla terraform/edge. Uprawnienia: docs/edge/guide/edge-4-sekrety.md" \
+    "" cicho
+
+zapytaj ACCESS_ADMIN \
+    "Twój mail — grupa 'admin' w Cloudflare Access (to, co tylko dla Ciebie, np. środowiska dev)" \
     ""
 
-# ── zapis źródła ──────────────────────────────────────────────────────────────
-umask 077
-{
-    echo "# Generowane przez scripts/setup.sh. Poza gitem — patrz .gitignore."
-    echo "# Jedyne miejsce, w którym te wartości są wpisane ręcznie."
-    for k in PROXMOX_API_TOKEN SSH_PUBLIC_KEY SEC_USER_AGENT; do
-        printf '%s="%s"\n' "$k" "${OBECNE[$k]}"
-    done
-} > "$ZRODLO"
-chmod 600 "$ZRODLO"
 echo
-echo "  zapisane: $ZRODLO (600)"
+zapisz_zrodlo PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN
 
-# ── rozprowadzenie: Terraform ─────────────────────────────────────────────────
+# ── rozprowadzenie: terraform/cluster ─────────────────────────────────────────
 echo
 echo "== terraform/cluster =="
 TFV="$ROOT/terraform/cluster/secrets.auto.tfvars"
-{
-    echo "# GENEROWANE przez scripts/setup.sh — nie edytuj ręcznie."
-    echo "# Źródłem jest .secrets.env w korzeniu repo."
-    echo
-    printf 'proxmox_api_token = "%s"\n\n' "${OBECNE[PROXMOX_API_TOKEN]}"
-    printf 'ssh_public_keys = [\n  "%s",\n]\n' "${OBECNE[SSH_PUBLIC_KEY]}"
-} > "$TFV"
-chmod 600 "$TFV"
-echo "  zapisane: $TFV"
+(
+    umask 077
+    {
+        echo "# GENEROWANE przez scripts/setup.sh — nie edytuj ręcznie."
+        echo "# Źródłem jest .secrets/platform.env."
+        echo
+        printf 'proxmox_api_token = "%s"\n\n' "${OBECNE[PROXMOX_API_TOKEN]}"
+        printf 'ssh_public_keys = [\n  "%s",\n]\n' "${OBECNE[SSH_PUBLIC_KEY]}"
+    } > "$TFV"
+)
+echo "  zapisane: ${TFV#"$ROOT"/}"
 
-# ── rozprowadzenie: Secret w klastrze ─────────────────────────────────────────
+# ── rozprowadzenie: terraform/edge ────────────────────────────────────────────
+echo
+echo "== terraform/edge =="
+TFV="$ROOT/terraform/edge/secrets.auto.tfvars"
+(
+    umask 077
+    {
+        echo "# GENEROWANE przez scripts/setup.sh — nie edytuj ręcznie."
+        echo "# Źródłem jest .secrets/platform.env. Grupy dostępu są w access/*.json."
+        echo
+        printf 'cloudflare_api_token = "%s"\n' "${OBECNE[CLOUDFLARE_API_TOKEN]}"
+    } > "$TFV"
+)
+echo "  zapisane: ${TFV#"$ROOT"/}"
+zapisz_grupe admin "${OBECNE[ACCESS_ADMIN]}"
+
+# ── rozprowadzenie: klaster ───────────────────────────────────────────────────
 echo
 echo "== klaster =="
-# Zawsze własny plik, nie KUBECONFIG z powłoki: ten złożony z wielu klastrów celuje w ten,
-# który akurat jest wybrany — i Secret wylądowałby na GKE.
-export KUBECONFIG="$ROOT/kubeconfig"
-
-if ! command -v kubectl >/dev/null; then
-    echo "  pominięte: brak kubectl"
-elif [ ! -f "$KUBECONFIG" ]; then
-    echo "  pominięte: brak $KUBECONFIG (just cluster kubeconfig)"
-elif ! kubectl cluster-info >/dev/null 2>&1; then
-    echo "  pominięte: klaster nieosiągalny (jeszcze go nie ma? najpierw: just cluster apply)"
-else
-    # --dry-run + apply zamiast create: to jest cała sztuczka na idempotencję, bo samo
-    # `create secret` wywala się, gdy sekret już istnieje.
-    kubectl create secret generic suwalski-sec \
-        --namespace default \
-        --from-literal=SEC_USER_AGENT="${OBECNE[SEC_USER_AGENT]}" \
-        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-    echo "  Secret suwalski-sec w przestrzeni default: aktualny"
+if klaster_dostepny; then
+    # Token tunelu: z wyjścia terraform/edge, nie z .secrets/ — powstaje przy apply edge.
+    # Sprawdzamy przez -json: przy pustym stanie `output -raw` wypisuje ostrzeżenie na
+    # stdout i kończy zerem, więc do Secretu trafiłby tekst ostrzeżenia.
+    EDGE="$ROOT/terraform/edge"
+    if [ -d "$EDGE/.terraform" ] && (cd "$EDGE" && tofu output -json tunnel_token >/dev/null 2>&1); then
+        secret cloudflared cloudflared-token "token=$(cd "$EDGE" && tofu output -raw tunnel_token)"
+    else
+        echo "  pominięte: token tunelu (tunelu jeszcze nie ma — najpierw: just edge apply)"
+    fi
 fi
 
 echo
 echo "== Dalej =="
-echo "  cd terraform/cluster  && tofu init    # jeśli jeszcze nie było"
-echo "  cd terraform/platform && tofu init"
-echo "  just cluster apply"
+echo "  projekty:  scripts/projects/<projekt>/[<środowisko>/]setup.sh — każdy swoje sekrety"
+echo "  init:      (cd terraform/<cluster|platform|edge> && tofu init)   # jeśli jeszcze nie było"
+echo "  potem:     just"

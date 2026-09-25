@@ -9,7 +9,7 @@ zapisujemy tylko, o co chodziło i dlaczego, żeby pomysł nie zginął.
 
 **Status:** zapisane. Obecne rozwiązanie jest **świadomie przejściowe**.
 
-Dziś sekrety leżą otwartym tekstem w `.secrets.env` (poza gitem), a `scripts/setup.sh`
+Dziś sekrety leżą otwartym tekstem w `.secrets/` (poza gitem, po pliku na zakres), a skrypty `setup.sh`
 rozprowadza je stamtąd do `terraform/cluster/secrets.auto.tfvars` i do Secretów
 w klastrze. Działa, jest idempotentne i wystarcza przy trzech wartościach. **Przy
 dziesięciu zacznie męczyć** — a przy odtwarzaniu klastra od zera trzeba je mieć gdzieś

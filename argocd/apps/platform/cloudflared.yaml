@@ -1,0 +1,34 @@
+# cloudflared — łącznik między klastrem a tunelem Cloudflare z terraform/edge/.
+#
+# W przeciwieństwie do suwalski-investing-tools manifesty leżą w TYM repo
+# (argocd/manifests/cloudflared/): to nie jest nasz kod z własnym wydaniem, tylko element
+# platformy, jak Traefik. Wersja obrazu jest przypięta w deployment.yaml.
+#
+# Token tunelu NIE jest w gicie. Secret cloudflared-token tworzy scripts/setup.sh z wyjścia
+# terraform/edge. Dopóki go nie ma, pody czekają w CreateContainerConfigError — i to jest
+# w porządku, wstaną same, gdy Secret się pojawi.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflared
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/cloudflared
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudflared
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      # Przestrzeń nazw zakłada Argo. setup.sh też ją tworzy (żeby mieć gdzie włożyć
+      # Secret przed pierwszą synchronizacją) — oba sposoby są idempotentne.
+      - CreateNamespace=true

@@ -15,6 +15,9 @@ override.tf.json
 # to one opisują, co gdzie stoi. Poza gitem zostają wyłącznie sekrety.
 secrets.auto.tfvars
 .secrets.env
+.secrets/
+# Grupy dostępu Cloudflare Access: maile osób — prywatne, a repo jest publiczne.
+terraform/edge/access/*.json
 terraform.tfvars
 *.tfvars.json
 

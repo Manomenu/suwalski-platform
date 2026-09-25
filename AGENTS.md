@@ -11,14 +11,22 @@ terraform/
   cluster/          maszyna na Proxmoksie + k3s          (osobna konfiguracja główna)
     templates/      szablony cloud-init
   platform/         Argo CD + aplikacja korzeniowa        (osobna konfiguracja główna)
-argocd/apps/        co biegnie w klastrze — Argo obserwuje ten katalog
+  edge/             Cloudflare: tunel, DNS, Access        (osobna konfiguracja główna)
+argocd/
+  apps/platform/    Application'y wspólne dla klastra (cloudflared)
+  apps/projects/    Application'y projektów — po pliku na projekt i środowisko
+  manifests/        manifesty elementów platformy bez własnego repo
 justfile            tylko lista modułów
 .just/
-  <moduł>.just      recepty: cluster · platform · argo · k9s
+  <moduł>.just      recepty: cluster · platform · edge · argo · k9s
   lib/              bash, którego recepty używają — nie wołać z ręki
-scripts/            tylko to, czego just nie zrobi: source do powłoki, setup.sh (just + sekrety)
-  .internal/        kroki setup.sh — nie wołać z ręki
+scripts/            tylko to, czego just nie zrobi: source do powłoki i sekrety
+  setup.sh          platforma: just + sekrety wspólne dla klastra
+  projects/         sekrety projektów: <projekt>/[<środowisko>/]setup.sh
+  .internal/        kroki i wspólne funkcje skryptów (lib.sh) — nie wołać z ręki
+.secrets/           źródła sekretów, po pliku na zakres — poza gitem
 docs/               decyzje, które nie mieszczą się w komentarzu
+  edge/guide/       przewodnik po warstwie edge — czytać od edge-0.md
 ```
 
 ### just i scripts/
@@ -32,6 +40,12 @@ Do `scripts/` trafia wyłącznie to, czego recepta just zrobić nie może: zmian
 powłoki (musi być `source`) i `setup.sh` — jedyny punkt wejścia na świeżej maszynie.
 Jego kroki (instalacja just itd.) leżą w `scripts/.internal/` i nie są osobnymi
 poleceniami: nowy krok przygotowania dopisujesz tam i wołasz z `setup.sh`.
+
+**Sekrety dzielą się według właściciela.** `scripts/setup.sh` zna wyłącznie platformę
+(Proxmox, Cloudflare, grupa `admin`, token tunelu). Wszystko, co należy do projektu —
+kto może wejść na jego adres, hasła aplikacji — ma skrypt w
+`scripts/projects/<projekt>/[<środowisko>/]setup.sh` i własny plik w `.secrets/`. Każdy
+skrypt czyta i pisze tylko swoje; wspólne funkcje są w `scripts/.internal/lib.sh`.
 
 ## Warstwy wartości
 

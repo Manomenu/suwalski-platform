@@ -3,7 +3,7 @@
 # Nie uruchamiaj wprost. Katalog .just/ jest ukryty celowo: z ręki woła się `just`,
 # a do rzeczy, które trzeba zrobić samemu, jest scripts/.
 #
-#   tofu.sh <validate|plan|apply> <cluster|platform> [argumenty do tofu]
+#   tofu.sh <validate|plan|apply> <cluster|platform|edge> [argumenty do tofu]
 set -euo pipefail
 
 AKCJA="${1:?brak akcji}"; shift
@@ -24,10 +24,11 @@ command -v tofu >/dev/null || {
     exit 1
 }
 
-# Sekrety są tylko w cluster/; platform bierze wszystko z kubeconfiga.
-if [ "$CEL" = "cluster" ] && [ "$AKCJA" != "validate" ] && [ ! -f "$TF/secrets.auto.tfvars" ]; then
+# Sekrety mają cluster/ i edge/; platform bierze wszystko z kubeconfiga.
+# Oba pliki generuje scripts/setup.sh z .secrets/platform.env — ręcznie się ich nie pisze.
+if [ "$CEL" != "platform" ] && [ "$AKCJA" != "validate" ] && [ ! -f "$TF/secrets.auto.tfvars" ]; then
     echo "brak $TF/secrets.auto.tfvars" >&2
-    echo "  cp terraform/cluster/secrets.auto.tfvars.example terraform/cluster/secrets.auto.tfvars" >&2
+    echo "  ./scripts/setup.sh" >&2
     exit 1
 fi
 
@@ -85,6 +86,17 @@ MSG
   podgląd:    k9s  ->  :po  ·  :ing  ·  :applications
   hasło:      just argo password
   adres:      $(wyjscie argocd_url "(po apply)")
+MSG
+        ;;
+    edge)
+        cat <<MSG
+  Tunel istnieje po stronie Cloudflare, ale nikt się z nim jeszcze nie łączy, dopóki
+  cloudflared w klastrze nie dostanie tokena.
+
+  token:      ./scripts/setup.sh              (wkłada go do Secretu cloudflared-token)
+  cloudflared: git push                       (Argo stawia go z argocd/apps/platform/)
+  stan:       just argo apps  ·  panel Zero Trust → Networks → Tunnels
+  adresy:     $(cd "$TF" && tofu output -json urls 2>/dev/null | tr -d '[]"' | tr ',' ' ')
 MSG
         ;;
     esac
