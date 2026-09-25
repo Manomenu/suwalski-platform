@@ -10,5 +10,5 @@ output "argocd_namespace" {
 
 output "haslo" {
   description = "Jak odczytać hasło początkowe użytkownika admin."
-  value       = "./scripts/argocd/password.sh"
+  value       = "just argo password"
 }

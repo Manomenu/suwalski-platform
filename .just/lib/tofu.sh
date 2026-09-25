@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Wspólna implementacja dla nakładek w scripts/cluster/ i scripts/platform/.
-# Nie uruchamiaj wprost — od tego są tamte. Katalog .internal jest ukryty celowo:
-# nic tu nie jest przeznaczone do wołania z ręki.
+# Wspólna implementacja recept tofu z .just/*.just — `just cluster plan` i spółka.
+# Nie uruchamiaj wprost. Katalog .just/ jest ukryty celowo: z ręki woła się `just`,
+# a do rzeczy, które trzeba zrobić samemu, jest scripts/.
 #
 #   tofu.sh <validate|plan|apply> <cluster|platform> [argumenty do tofu]
 set -euo pipefail
@@ -13,7 +13,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF="$ROOT/terraform/$CEL"
 
 command -v tofu >/dev/null || {
-    echo "brak tofu — jest w ~/.dotfiles/fedora/nix/home.nix, uruchom home-manager switch" >&2
+    echo "brak tofu — jest w ~/.dotfiles/fedora/nix/home.nix, uruchom ~/scripts/fedora/nix/apply.sh" >&2
     exit 1
 }
 [ -d "$TF" ] || { echo "nie ma takiej konfiguracji: $TF" >&2; exit 1; }
@@ -74,7 +74,7 @@ apply)
   swoje w tle, zwykle dwie–trzy minuty.
 
   gotowość:   ssh $(wyjscie vm_user maniumek)@$(wyjscie vm_ip) 'ls /var/lib/cloud/k3s-ready'
-  kubectl:    source $ROOT/scripts/cluster/kubectl-setup.sh
+  kubectl:    just cluster kubeconfig
   podgląd:    k9s
 MSG
         ;;
@@ -83,7 +83,7 @@ MSG
   Argo CD potrzebuje chwili, zanim wszystkie pody wstaną.
 
   podgląd:    k9s  ->  :po  ·  :ing  ·  :applications
-  hasło:      $ROOT/scripts/platform/argocd-password.sh
+  hasło:      just argo password
   adres:      $(wyjscie argocd_url "(po apply)")
 MSG
         ;;

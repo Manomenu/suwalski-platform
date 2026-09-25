@@ -5,18 +5,29 @@ węzeł `aoostar`, maszyna 119 pod `192.168.0.119`.
 
 ---
 
-## Skrypty repo
+## Polecenia repo
 
-Nie trzeba pamiętać ścieżek ani flag — od tego są.
+Nie trzeba pamiętać ścieżek ani flag — od tego jest `just`. Samo `just` pokazuje moduły,
+`just <moduł>` ich polecenia.
 
 | Polecenie | Co robi |
 | --- | --- |
-| `./scripts/cluster/tofu-validate.sh` | `fmt` + `validate`. Lokalnie, bez dotykania Proxmoksa. Przed każdym commitem. |
-| `./scripts/cluster/tofu-plan.sh` | Pokazuje, co by się zmieniło. Niczego nie zmienia. |
-| `./scripts/cluster/tofu-apply.sh` | Robi to. `--yes-man` pomija pytanie o zgodę. |
-| `source ./scripts/cluster/kubectl-setup.sh` | Pobiera kubeconfig z węzła i od razu sprawdza, że działa. |
-| `source ./scripts/cluster/kubectl-setup.sh` | Ustawia `KUBECONFIG` — w tej powłoce i na stałe. Musi być `source`. |
-| `./scripts/k9s/logs.sh [-f]` | Log k9s — jedyne miejsce, gdzie tłumaczy się ze swoich decyzji. |
+| `just cluster validate` | `fmt` + `validate`. Lokalnie, bez dotykania Proxmoksa. Przed każdym commitem. |
+| `just cluster plan` | Pokazuje, co by się zmieniło. Niczego nie zmienia. |
+| `just cluster apply` | Robi to. `-auto-approve` pomija pytanie o zgodę. |
+| `just cluster kubeconfig` | Pobiera kubeconfig, nazywa kontekst `homelab` i dokłada go do `~/.kube/configs/` obok innych klastrów. Bezpieczne do powtarzania. |
+| `kubectl config use-context homelab` | Przełącza na homelab (drugi kontekst: `gke`). W k9s: `:ctx`. |
+| `just cluster ssh` | Logowanie na węzeł k3s. |
+| `just platform plan` · `apply` · `validate` | To samo dla warstwy w klastrze. |
+| `just argo password` · `apps` | Hasło admina Argo · stan aplikacji (sync, health). |
+| `just k9s logs [-f]` | Log k9s — jedyne miejsce, gdzie tłumaczy się ze swoich decyzji. |
+
+Poza `just`, bo `just` nie zmieni Twojej powłoki i nie zainstaluje sam siebie:
+
+| Skrypt | Co robi |
+| --- | --- |
+| `./scripts/setup.sh` | Instaluje `just`, jeśli go brak, pyta o sekrety i rozprowadza je. |
+| `source ./scripts/cluster/kubectl-setup.sh` | Jak `just cluster kubeconfig`, a do tego ustawia `KUBECONFIG` w tej powłoce. |
 
 ---
 
@@ -121,7 +132,7 @@ Po dwukropku. To te same nazwy, których używa `kubectl get`.
 | `:q` | Wyjście. |
 
 **Pusty widok to zwykle nie awaria.** Albo patrzysz na pustą przestrzeń nazw (`0`
-pomaga), albo k9s nie ma kontekstu — a to rozstrzyga `./scripts/k9s/logs.sh`:
+pomaga), albo k9s nie ma kontekstu — a to rozstrzyga `just k9s logs`:
 `No resources found` znaczy „działa, tylko pusto”, `No context configured` znaczy
 „nie wiem, gdzie jest klaster”.
 

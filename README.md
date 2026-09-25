@@ -40,8 +40,9 @@ hand. If you change either by hand, the next `apply` puts it back.
 | [OpenTofu](https://opentofu.org/) or Terraform | `tofu` in the examples; the `.tf` files are the same either way |
 | [kubectl](https://kubernetes.io/docs/reference/kubectl/) | Talking to the cluster once it is up |
 | [k9s](https://k9scli.io/) *(optional)* | A much nicer way to look around than typing commands |
+| [just](https://just.systems/) | Runs every everyday command. `./scripts/setup.sh` installs it |
 
-The repo installs none of these — it describes the cluster, not your workstation.
+The repo installs none of these except `just` — it describes the cluster, not your workstation.
 
 ## Quick start
 
@@ -52,8 +53,8 @@ safe right away.
 ssh root@your-proxmox 'pveum user token add root@pam terraform --privsep 0'
 ```
 
-**2. Fill in your secrets.** One interactive script asks for each one and writes it
-everywhere it is needed:
+**2. Fill in your secrets.** One interactive script installs `just` if it is missing, then
+asks for each secret and writes it everywhere it is needed:
 
 ```sh
 ./scripts/setup.sh
@@ -74,13 +75,13 @@ $EDITOR terraform/cluster/proxmox.auto.tfvars   # node name, storage, IP address
 
 ```sh
 (cd terraform/cluster && tofu init)     # download providers, once
-./scripts/cluster/tofu-plan.sh          # see what it intends to do — changes nothing
-./scripts/cluster/tofu-apply.sh         # do it (asks before touching anything)
+just cluster plan                       # see what it intends to do — changes nothing
+just cluster apply                      # do it (asks before touching anything)
 
-source ./scripts/cluster/kubectl-setup.sh   # fetch the kubeconfig, point kubectl at it
+just cluster kubeconfig                 # fetch the kubeconfig, add it as context `homelab`
 
 (cd terraform/platform && tofu init)
-./scripts/platform/tofu-apply.sh        # Argo CD, and everything it pulls in
+just platform apply                     # Argo CD, and everything it pulls in
 ```
 
 The first run takes a few minutes: Proxmox downloads the image, the VM boots, and
@@ -107,7 +108,7 @@ ssh you@your-vm 'ls /var/lib/cloud/k3s-ready'
 
 Argo CD then answers at the address in `terraform/platform/platform.auto.tfvars`
 (`argocd.k8s.suwalski.internal` here). The initial admin password is stored in the cluster;
-`./scripts/platform/argocd-password.sh` decodes it for you.
+`just argo password` decodes it for you.
 
 ## How a deploy happens
 
@@ -140,18 +141,27 @@ describes the *shape* of a deployment (its chart); this repo decides *which vers
 
 ## Everyday commands
 
+Type `just` to see the modules, `just <module>` to see what each one can do.
+
 | Command | What it does |
 | --- | --- |
-| `./scripts/setup.sh` | Ask for the secrets and distribute them. Safe to re-run |
-| `./scripts/cluster/tofu-plan.sh` | Show what would change on Proxmox |
-| `./scripts/cluster/tofu-apply.sh` | Apply it. Extra arguments go straight to `tofu`, so `-auto-approve` skips the prompt |
-| `./scripts/cluster/tofu-validate.sh` | Format and check the files — offline, quick |
-| `source ./scripts/cluster/kubectl-setup.sh` | Fetch the kubeconfig, point `kubectl` at it, make it stick |
-| `./scripts/platform/tofu-plan.sh` | The same three, for what runs *inside* the cluster |
-| `./scripts/platform/tofu-apply.sh` | |
-| `./scripts/platform/tofu-validate.sh` | |
-| `./scripts/platform/argocd-password.sh` | Argo CD's initial admin password, decoded |
-| `./scripts/k9s/logs.sh` | k9s's own log — the only place it explains itself |
+| `just cluster plan` | Show what would change on Proxmox |
+| `just cluster apply` | Apply it. Extra arguments go straight to `tofu`, so `-auto-approve` skips the prompt |
+| `just cluster validate` | Format and check the files — offline, quick |
+| `just cluster kubeconfig` | Fetch the kubeconfig and add it as context `homelab` next to any other clusters. Safe to re-run |
+| `just cluster ssh` | Log in to the k3s node |
+| `just platform plan` · `apply` · `validate` | The same, for what runs *inside* the cluster |
+| `just argo password` | Argo CD's initial admin password, decoded |
+| `just argo apps` | Every application: in sync with git? healthy? |
+| `just k9s logs` | k9s's own log — the only place it explains itself |
+
+A few things stay as plain scripts, because `just` cannot do them: it runs in a child
+process, so it cannot change your shell, and it cannot install itself.
+
+| Script | What it does |
+| --- | --- |
+| `./scripts/setup.sh` | Install `just` if missing, ask for the secrets and distribute them. Safe to re-run |
+| `source ./scripts/cluster/kubectl-setup.sh` | Like `just cluster kubeconfig`, and also points *this* shell at it |
 
 Looking *at* the cluster is k9s's job, not a script's: `:po`, `:ing`, `:applications`.
 
