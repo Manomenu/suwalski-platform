@@ -1,0 +1,67 @@
+# cloudflared: otwiera wychodzące połączenia do Cloudflare i oddaje przychodzący nimi ruch
+# Traefikowi. Trasy (który host dokąd) NIE są tutaj — trzyma je Cloudflare, opisuje je
+# terraform/edge/tunnel.tf. Ten pod zna tylko token, którym przedstawia się tunelowi.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  labels:
+    app: cloudflared
+spec:
+  # Dwie repliki to nie wysoka dostępność — węzeł jest jeden. Chodzi o aktualizacje:
+  # przy wymianie wersji jedna replika trzyma tunel, póki druga wstaje, więc ciocia nie
+  # widzi przerwy. Każda replika to osobny „connector” tego samego tunelu.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      securityContext:
+        runAsNonRoot: true # obraz i tak biegnie jako nonroot (65532)
+      containers:
+        - name: cloudflared
+          # Przypięta wersja, jak wszystko w tym repo. Nowsza: zmień tutaj, commit, push.
+          image: cloudflare/cloudflared:2026.9.3
+          args:
+            - tunnel
+            # Obraz aktualizuje się przez zmianę tego pliku, nie sam w biegu.
+            - --no-autoupdate
+            # Endpoint /ready dla sondy niżej. 0.0.0.0, bo kubelet puka z zewnątrz kontenera.
+            - --metrics
+            - 0.0.0.0:2000
+            - run
+          env:
+            # `cloudflared tunnel run` czyta token z tej zmiennej — dzięki temu nie trafia on
+            # do argumentów procesu, widocznych w `ps` i w opisie poda.
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token
+                  key: token
+          ports:
+            - name: metrics
+              containerPort: 2000
+          # /ready odpowiada 200 dopiero, gdy jest przynajmniej jedno połączenie z Cloudflare.
+          # Pod bez połączenia to pod, który nic nie robi — restart jest właściwą reakcją.
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

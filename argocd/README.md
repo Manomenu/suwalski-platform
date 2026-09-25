@@ -4,14 +4,35 @@ Co ma biec w klastrze. Argo CD obserwuje `apps/` i wprowadza zmiany samo — **t
 uruchamia się żadnych poleceń**.
 
 ```
-apps/
-└── suwalski-investing-tools.yaml    aplikacja + przypięta wersja obrazu
+apps/                                 Application'y — root app czyta ten katalog rekurencyjnie
+├── platform/                         wspólne dla całego klastra, jedno na klaster
+│   └── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
+└── projects/                         aplikacje — po pliku na projekt i środowisko
+    └── suwalski-investing-tools.yaml
+manifests/                            manifesty elementów platformy, które nie mają własnego repo
+└── cloudflared/
+    └── deployment.yaml
 ```
+
+## platform/ czy projects/
+
+**platform/** — rzecz, z której korzysta cały klaster, niezależnie od tego, ile aplikacji na
+nim biegnie: wejście z internetu (cloudflared), w przyszłości np. cert-manager czy
+monitoring. Jedna sztuka na klaster, własna przestrzeń nazw.
+
+**projects/** — aplikacja, dla której klaster w ogóle istnieje. Po pliku na projekt
+i środowisko (np. `witkowska-dev.yaml`, `witkowska-prod.yaml`), każdy we własnej
+przestrzeni nazw.
+
+To rozróżnienie jest tylko dla ludzi: dla Argo oba katalogi to po prostu Application'y.
+Argo samo siedzi w Terraformie (`terraform/platform/`) wyłącznie dlatego, że nie może
+zainstalować samego siebie — wszystko inne, także platforma, idzie stąd.
 
 ## Jak dodać aplikację
 
-Nowy plik w `apps/`, commit, push. Argo zauważy go w ciągu kilku minut. Nie ma kroku
-`apply` i nie powinno być.
+Nowy plik w `apps/projects/`, commit, push. Argo zauważy go w ciągu kilku minut. Nie ma
+kroku `apply` i nie powinno być. Jeśli ma być dostępna z internetu, dopisz ją też do
+`apps` w `terraform/edge/edge.auto.tfvars` — patrz `docs/edge/guide/`.
 
 ## Jak wdrożyć nową wersję
 
@@ -20,6 +41,9 @@ wdrożenia — i dlatego `git log` na tym pliku jest historią wdrożeń, a `git
 wycofaniem.
 
 Od Fazy 6 robi to CI: buduje obraz, po czym commituje podbicie tej linijki.
+
+Elementy platformy z `manifests/` aktualizuje się tak samo: zmiana wersji obrazu
+w manifeście, commit, push.
 
 ## Czemu to repo, a nie repo z kodem
 

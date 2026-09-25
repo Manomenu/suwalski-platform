@@ -26,7 +26,8 @@ Poza `just`, bo `just` nie zmieni Twojej powłoki i nie zainstaluje sam siebie:
 
 | Skrypt | Co robi |
 | --- | --- |
-| `./scripts/setup.sh` | Instaluje `just`, jeśli go brak, pyta o sekrety i rozprowadza je. |
+| `./scripts/setup.sh` | Instaluje `just`, jeśli go brak, pyta o sekrety platformy i rozprowadza je. |
+| `./scripts/projects/<projekt>/[<środowisko>/]setup.sh` | To samo dla projektu: kto może wejść, sekrety aplikacji. |
 | `source ./scripts/cluster/kubectl-setup.sh` | Jak `just cluster kubeconfig`, a do tego ustawia `KUBECONFIG` w tej powłoce. |
 
 ---

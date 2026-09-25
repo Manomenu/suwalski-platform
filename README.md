@@ -61,8 +61,9 @@ asks for each secret and writes it everywhere it is needed:
 ```
 
 Run it as often as you like — it is idempotent, and pressing Enter keeps whatever you
-gave it last time. Secrets live in `.secrets.env` at the root, outside git; the copies it
-generates are never edited by hand.
+gave it last time. Secrets live in `.secrets/` at the root, outside git, one file per
+scope; the copies it generates are never edited by hand. That script covers the platform
+only — each project has its own under `scripts/projects/` (see below).
 
 **3. Describe your environment.** This part is *not* secret and is committed on purpose —
 it is a description of where things stand, not a personal setting:
@@ -116,7 +117,9 @@ No one pushes to this cluster. Argo CD sits inside it, watches git, and pulls �
 answer to "what is running?" is always "whatever git says", and you find out by reading a
 file rather than by interrogating the cluster.
 
-[`argocd/apps/`](argocd/apps) holds one file per application. Each names the repo that has
+[`argocd/apps/`](argocd/apps) holds one file per application, split by level:
+`platform/` for what the whole cluster shares (the Cloudflare tunnel connector) and
+`projects/` for the applications themselves. Each project file names the repo that has
 the application's Helm chart, and pins the exact image tag to run:
 
 ```yaml
@@ -160,7 +163,8 @@ process, so it cannot change your shell, and it cannot install itself.
 
 | Script | What it does |
 | --- | --- |
-| `./scripts/setup.sh` | Install `just` if missing, ask for the secrets and distribute them. Safe to re-run |
+| `./scripts/setup.sh` | Install `just` if missing, ask for the platform's secrets and distribute them. Safe to re-run |
+| `./scripts/projects/<project>/[<env>/]setup.sh` | The same for one project: who may log in, the app's own secrets |
 | `source ./scripts/cluster/kubectl-setup.sh` | Like `just cluster kubeconfig`, and also points *this* shell at it |
 
 Looking *at* the cluster is k9s's job, not a script's: `:po`, `:ing`, `:applications`.
@@ -173,8 +177,8 @@ the k3s version have sensible defaults in `terraform/cluster/variables.tf`; over
 the same `.auto.tfvars` file if you disagree. The cluster's own settings — the Argo CD
 hostname, chiefly — are in `terraform/platform/platform.auto.tfvars`.
 
-To deploy an application of your own, drop a file into `argocd/apps/` next to the one that
-is there. Argo CD picks it up on its own.
+To deploy an application of your own, drop a file into `argocd/apps/projects/` next to the
+one that is there. Argo CD picks it up on its own.
 
 ## Digging deeper
 
