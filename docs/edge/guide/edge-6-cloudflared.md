@@ -41,6 +41,25 @@ source:
   path: argocd/manifests/cloudflared                                   ← zwykłe manifesty
 ```
 
+### Dwa namespace'y w jednym pliku
+
+```yaml
+metadata:
+  namespace: argocd          # gdzie leży SAM Application (zlecenie dla Argo)
+spec:
+  destination:
+    namespace: cloudflared   # gdzie lądują obiekty, które z niego powstają
+```
+
+Każdy Application leży w `argocd`, bo Argo domyślnie czyta zlecenia **tylko ze swojego
+namespace** — celowo: Application decyduje, co i gdzie się instaluje, więc gdyby mógł
+leżeć gdziekolwiek, każdy z prawem zapisu do dowolnego namespace'u mógłby kazać Argo
+zainstalować coś w `kube-system`. Pody, Service'y i Ingressy trafiają do namespace'u
+z `destination` — tego projektu albo elementu platformy.
+
+`kubectl -n argocd get applications` pokazuje zlecenia, `kubectl -n <projekt> get all` —
+to, co z nich powstało.
+
 ## Skąd katalog `argocd/manifests/`
 
 Tak — to jest dokładnie ta różnica:

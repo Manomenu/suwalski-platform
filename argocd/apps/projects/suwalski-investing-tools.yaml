@@ -27,7 +27,9 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    # Własna przestrzeń nazw projektu, jak każdy projekt. Bez sufiksu -dev/-prod, bo projekt
+    # ma jedno środowisko; skrót, bo pełna nazwa powtarzałaby się w każdym kubectl -n.
+    namespace: suw-inv-tools
 
   syncPolicy:
     automated:
@@ -37,3 +39,7 @@ spec:
       # Kasuj obiekty, które zniknęły z gita — inaczej po usunięciu czegoś z charta
       # zostawałoby ono w klastrze na zawsze. PVC jest z tego wyłączony adnotacją.
       prune: true
+    syncOptions:
+      # Przestrzeń zakłada Argo. Secret suwalski-sec wkłada do niej
+      # scripts/projects/suwalski-investing-tools/setup.sh — ten też ją tworzy, jeśli trzeba.
+      - CreateNamespace=true
