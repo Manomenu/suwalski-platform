@@ -8,7 +8,8 @@ apps/                                 Application'y — root app czyta ten katal
 ├── platform/                         wspólne dla całego klastra, jedno na klaster
 │   └── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
 └── projects/                         aplikacje — po pliku na projekt i środowisko
-    └── suwalski-investing-tools.yaml
+    ├── suwalski-investing-tools.yaml namespace suw-inv-tools
+    └── witkowska-dev.yaml            ⚠ test: investing-tools pod witkowska-dev.gugnowski.com
 manifests/                            manifesty elementów platformy, które nie mają własnego repo
 └── cloudflared/
     └── deployment.yaml

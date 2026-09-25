@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sekrety projektu suwalski-investing-tools. Idempotentne.
 #
-#   .secrets/suwalski-investing-tools.env ──>  Secret suwalski-sec (namespace default)
+#   .secrets/suwalski-investing-tools.env ──>  Secret suwalski-sec (namespace suw-inv-tools)
 #
 # Projekt ma jedno środowisko, więc skrypt leży bezpośrednio w katalogu projektu. Gdy dojdą
 # dev/prod, rozdziel go jak scripts/projects/witkowska/.
@@ -24,5 +24,5 @@ zapisz_zrodlo SEC_USER_AGENT
 echo
 echo "== klaster =="
 if klaster_dostepny; then
-    secret default suwalski-sec "SEC_USER_AGENT=${OBECNE[SEC_USER_AGENT]}"
+    secret suw-inv-tools suwalski-sec "SEC_USER_AGENT=${OBECNE[SEC_USER_AGENT]}"
 fi
