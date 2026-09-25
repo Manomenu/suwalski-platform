@@ -8,7 +8,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 command -v kubectl >/dev/null || { echo "brak kubectl" >&2; exit 1; }
-[ -n "${KUBECONFIG:-}" ] || export KUBECONFIG="$ROOT/kubeconfig"
+# Zawsze własny plik, nie KUBECONFIG z powłoki: ten złożony z wielu klastrów celuje w ten,
+# który akurat jest wybrany — a to może być GKE z suwalski-gcloud-platform.
+[ -f "$ROOT/kubeconfig" ] || { echo "brak $ROOT/kubeconfig — just cluster kubeconfig" >&2; exit 1; }
+export KUBECONFIG="$ROOT/kubeconfig"
 
 NS="${ARGOCD_NAMESPACE:-argocd}"
 

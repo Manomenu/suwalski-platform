@@ -18,4 +18,4 @@ output "vm_user" {
 # Świadomie BEZ wyjścia typu „gotowa komenda do eval". Taki ciąg wygląda wygodnie, ale
 # zależy od katalogu, z którego go uruchomisz, i potrafi wyeksportować ścieżkę względną
 # albo — gdy tofu zwróci błąd — oddać do eval komunikat razem z kodami kolorów.
-# Od pobrania kubeconfiga jest ./scripts/kubeconfig.sh.
+# Od pobrania kubeconfiga jest `just cluster kubeconfig`.

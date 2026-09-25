@@ -2,7 +2,7 @@
 # provider nie może być skonfigurowany plikiem, który powstaje w tym samym przebiegu.
 # Maszyna i kubeconfig muszą już istnieć, zanim cokolwiek tutaj ruszy.
 #
-# Kolejność: cluster -> ./scripts/kubeconfig.sh -> platform
+# Kolejność: just cluster apply -> just cluster kubeconfig -> just platform apply
 
 locals {
   kubeconfig = abspath("${path.module}/../../kubeconfig")

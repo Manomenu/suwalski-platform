@@ -21,7 +21,7 @@ resource "terraform_data" "root_app" {
       set -euo pipefail
       test -f "$KUBECONFIG_PATH" || {
         echo "brak kubeconfiga: $KUBECONFIG_PATH" >&2
-        echo "  source ../../scripts/cluster/kubectl-setup.sh" >&2
+        echo "  just cluster kubeconfig" >&2
         exit 1
       }
       printf '%s' "$MANIFEST" | kubectl --kubeconfig "$KUBECONFIG_PATH" apply -f -

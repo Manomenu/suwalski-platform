@@ -7,10 +7,31 @@ jest opisane kodem. To repo **decyduje, co biegnie** — obrazy publikuje
 ## Układ
 
 ```
-terraform/          jedna konfiguracja główna (root module)
-  templates/        szablony cloud-init
+terraform/
+  cluster/          maszyna na Proxmoksie + k3s          (osobna konfiguracja główna)
+    templates/      szablony cloud-init
+  platform/         Argo CD + aplikacja korzeniowa        (osobna konfiguracja główna)
+argocd/apps/        co biegnie w klastrze — Argo obserwuje ten katalog
+justfile            tylko lista modułów
+.just/
+  <moduł>.just      recepty: cluster · platform · argo · k9s
+  lib/              bash, którego recepty używają — nie wołać z ręki
+scripts/            tylko to, czego just nie zrobi: source do powłoki, setup.sh (just + sekrety)
+  .internal/        kroki setup.sh — nie wołać z ręki
 docs/               decyzje, które nie mieszczą się w komentarzu
 ```
+
+### just i scripts/
+
+Codzienne polecenia to `just <moduł> <polecenie>`. Nowe polecenie dopisujesz jako receptę
+w `.just/<moduł>.just` z `[doc]` (i `[group]`, gdy moduł ma ich kilka); dłuższy bash
+trafia do `.just/lib/`, a recepta go woła. Nowa warstwa Terraforma = nowy moduł
++ `mod` z `[doc]`/`[group('warstwy')]` w głównym `justfile`.
+
+Do `scripts/` trafia wyłącznie to, czego recepta just zrobić nie może: zmiana bieżącej
+powłoki (musi być `source`) i `setup.sh` — jedyny punkt wejścia na świeżej maszynie.
+Jego kroki (instalacja just itd.) leżą w `scripts/.internal/` i nie są osobnymi
+poleceniami: nowy krok przygotowania dopisujesz tam i wołasz z `setup.sh`.
 
 ## Warstwy wartości
 

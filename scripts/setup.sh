@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Przygotowanie świeżo sklonowanego repozytorium. Idempotentne — uruchamiaj ile chcesz.
 #
+# Kroki: narzędzia (just) → sekrety → ich rozprowadzenie.
+#
 # Jedno źródło prawdy dla sekretów: .secrets.env w korzeniu repo, poza gitem.
 # Ten skrypt pyta o wartości i ROZPROWADZA je tam, gdzie są potrzebne:
 #
@@ -55,6 +57,14 @@ zapytaj() {
     OBECNE["$nazwa"]="$nowa"
 }
 
+# ── narzędzia ─────────────────────────────────────────────────────────────────
+# Najpierw, bo wszystko po setupie idzie przez `just`. Brak just nie blokuje sekretów —
+# rozprowadzamy je i tak, a ostrzeżenie zostaje na ekranie.
+echo "== Narzędzia =="
+"$ROOT/scripts/.internal/install-just.sh" \
+    || echo "  uwaga: bez just nie zadziała żadne \`just ...\` — sekrety rozprowadzam i tak" >&2
+
+echo
 echo "== Sekrety =="
 echo "  źródło: $ZRODLO"
 
@@ -102,14 +112,16 @@ echo "  zapisane: $TFV"
 # ── rozprowadzenie: Secret w klastrze ─────────────────────────────────────────
 echo
 echo "== klaster =="
-if [ -z "${KUBECONFIG:-}" ] && [ -f "$ROOT/kubeconfig" ]; then
-    export KUBECONFIG="$ROOT/kubeconfig"
-fi
+# Zawsze własny plik, nie KUBECONFIG z powłoki: ten złożony z wielu klastrów celuje w ten,
+# który akurat jest wybrany — i Secret wylądowałby na GKE.
+export KUBECONFIG="$ROOT/kubeconfig"
 
 if ! command -v kubectl >/dev/null; then
     echo "  pominięte: brak kubectl"
+elif [ ! -f "$KUBECONFIG" ]; then
+    echo "  pominięte: brak $KUBECONFIG (just cluster kubeconfig)"
 elif ! kubectl cluster-info >/dev/null 2>&1; then
-    echo "  pominięte: klaster nieosiągalny (jeszcze go nie ma? uruchom najpierw cluster/tofu-apply.sh)"
+    echo "  pominięte: klaster nieosiągalny (jeszcze go nie ma? najpierw: just cluster apply)"
 else
     # --dry-run + apply zamiast create: to jest cała sztuczka na idempotencję, bo samo
     # `create secret` wywala się, gdy sekret już istnieje.
@@ -124,4 +136,4 @@ echo
 echo "== Dalej =="
 echo "  cd terraform/cluster  && tofu init    # jeśli jeszcze nie było"
 echo "  cd terraform/platform && tofu init"
-echo "  ./scripts/cluster/tofu-apply.sh"
+echo "  just cluster apply"

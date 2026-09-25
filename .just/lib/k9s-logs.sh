@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Pokaż log k9s — jedyne miejsce, w którym k9s tłumaczy się ze swoich decyzji.
 #
-#   ./scripts/k9s/logs.sh          ostatnie 40 linii
-#   ./scripts/k9s/logs.sh -f       śledź na żywo (przydatne przy drugim terminalu)
-#   ./scripts/k9s/logs.sh -n 200   więcej historii
+#   just k9s logs          ostatnie 40 linii
+#   just k9s logs -f       śledź na żywo (przydatne przy drugim terminalu)
+#   just k9s logs -n 200   więcej historii
 #
 # Dwa wpisy warto umieć rozróżnić, bo na ekranie wyglądają identycznie:
 #   "No resources found for v1/pods in \"default\" namespace"  -> działa, tylko pusto
