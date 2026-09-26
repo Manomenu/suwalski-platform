@@ -14,6 +14,12 @@ default:
 password:
     @{{root}}/.just/lib/argocd-password.sh
 
+[doc('Każ Argo sprawdzić gita teraz, zamiast czekać do 3 min. Bez argumentu: wszystkie aplikacje')]
+refresh app="":
+    @kubectl --kubeconfig {{root}}/kubeconfig -n argocd annotate applications \
+        {{ if app == "" { "--all" } else { app } }} argocd.argoproj.io/refresh=normal --overwrite
+    @echo "  za kilka sekund: just argo apps"
+
 [doc('Aplikacje: czy zgadzają się z gitem (sync) i czy działają (health)')]
 apps:
     @kubectl --kubeconfig {{root}}/kubeconfig -n argocd get applications \

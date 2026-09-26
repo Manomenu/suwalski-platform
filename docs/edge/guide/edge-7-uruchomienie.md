@@ -115,7 +115,8 @@ Drugi raz — teraz tunel istnieje. **Powinieneś zobaczyć:**
 ## Krok 8 — cloudflared przez Argo
 
 Zacommituj i wypchnij zmiany (`argocd/apps/platform/cloudflared.yaml`,
-`argocd/manifests/cloudflared/`). Argo zauważy je w ciągu kilku minut.
+`argocd/manifests/cloudflared/`). Argo zauważy je w ciągu ~3 minut — albo od razu po
+`just argo refresh`.
 
 ```sh
 just argo apps
