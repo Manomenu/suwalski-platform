@@ -156,6 +156,7 @@ Type `just` to see the modules, `just <module>` to see what each one can do.
 | `just platform plan` · `apply` · `validate` | The same, for what runs *inside* the cluster |
 | `just argo password` | Argo CD's initial admin password, decoded |
 | `just argo apps` | Every application: in sync with git? healthy? |
+| `just argo refresh [app]` | Make Argo CD check git now instead of within ~3 minutes |
 | `just k9s logs` | k9s's own log — the only place it explains itself |
 
 A few things stay as plain scripts, because `just` cannot do them: it runs in a child

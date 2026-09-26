@@ -20,6 +20,7 @@ Nie trzeba pamiętać ścieżek ani flag — od tego jest `just`. Samo `just` po
 | `just cluster ssh` | Logowanie na węzeł k3s. |
 | `just platform plan` · `apply` · `validate` | To samo dla warstwy w klastrze. |
 | `just argo password` · `apps` | Hasło admina Argo · stan aplikacji (sync, health). |
+| `just argo refresh [app]` | Argo sprawdza gita od razu, zamiast w ciągu ~3 minut. Bez argumentu: wszystkie. |
 | `just k9s logs [-f]` | Log k9s — jedyne miejsce, gdzie tłumaczy się ze swoich decyzji. |
 
 Poza `just`, bo `just` nie zmieni Twojej powłoki i nie zainstaluje sam siebie:
