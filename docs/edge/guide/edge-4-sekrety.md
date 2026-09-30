@@ -25,7 +25,7 @@ Mail cioci nie daje nikomu władzy nad niczym. Ale `suwalski-platform` jest publ
 naruszenie prywatności. Dlatego:
 
 - w gicie (`edge.auto.tfvars`) jest tylko **nazwa grupy**, którą aplikacja wpuszcza:
-  `witkowska-dev = { access = "admin" }`;
+  `automat-operat-dev = { access = "admin" }`;
 - kto należy do grupy — lista maili — jest w pliku `terraform/edge/access/<grupa>.json`,
   poza gitem.
 
@@ -34,12 +34,12 @@ tajne przed Tobą, tylko przed światem, a ukryte nie pozwoliłyby zobaczyć, ko
 
 ### Czemu grupy to osobne pliki, a nie jedna zmienna
 
-Grupy należą do różnych **właścicieli**: `admin` (Ty) to sprawa platformy, a `witkowska`
-(Ty i ciocia) to sprawa projektu witkowska. Każdą ustawia inny skrypt (niżej). Gdyby
+Grupy należą do różnych **właścicieli**: `admin` (Ty) to sprawa platformy, a `automat-operat`
+(Ty i ciocia) to sprawa projektu automat-operat. Każdą ustawia inny skrypt (niżej). Gdyby
 wszystkie grupy siedziały w jednej zmiennej w jednym pliku, każdy skrypt musiałby ten plik
 przepisywać — i skrypt projektu kasowałby grupę platformy albo odwrotnie.
 
-Dlatego **plik = grupa**: `access/admin.json`, `access/witkowska.json`. Każdy skrypt
+Dlatego **plik = grupa**: `access/admin.json`, `access/automat-operat.json`. Każdy skrypt
 dokłada tylko swój plik, a `access.tf` składa grupy ze wszystkiego, co w katalogu leży.
 To ten sam wzór co kubeconfigi w `~/.kube/configs/` — addytywnie, bez znaczenia kolejności.
 
@@ -64,13 +64,17 @@ scripts/setup.sh                                  PLATFORMA
     ├─> terraform/edge/access/admin.json          grupa „admin”: Ty
     └─> Secret cloudflared-token w klastrze       token tunelu, z wyjścia terraform/edge
 
-scripts/projects/witkowska/prod/setup.sh          PROJEKT witkowska, środowisko prod
-    pyta o: ACCESS_WITKOWSKA
-    ├─> .secrets/witkowska-prod.env
-    └─> terraform/edge/access/witkowska.json      grupa „witkowska”: Ty i ciocia
+scripts/projects/automat-operat/prod/setup.sh     PROJEKT automat-operat, środowisko prod
+    pyta o: ACCESS_AUTOMAT_OPERAT
+    ├─> .secrets/automat-operat-prod.env
+    └─> terraform/edge/access/automat-operat.json grupa „automat-operat”: Ty i ciocia
 
-scripts/projects/witkowska/dev/setup.sh           PROJEKT witkowska, środowisko dev
-    dziś nic — dev wpuszcza grupę „admin” z platformy; tu dojdą hasła aplikacji
+scripts/projects/automat-operat/dev/setup.sh      PROJEKT automat-operat, środowisko dev
+    pyta o: GHCR_USER, GHCR_TOKEN (dev wpuszcza grupę „admin” z platformy)
+    ├─> .secrets/automat-operat-dev.env
+    ├─> .secrets/automat-operat-deploy-key        generowany; publiczna połowa → GitHub
+    ├─> Secret repo-automat-operat w argocd       Argo czyta prywatne repo
+    └─> Secret ghcr-pull w automat-operat-dev     k3s pobiera prywatne obrazy
 
 scripts/projects/suwalski-investing-tools/setup.sh
     pyta o: SEC_USER_AGENT  ──>  Secret suwalski-sec

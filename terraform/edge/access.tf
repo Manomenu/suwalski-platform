@@ -2,7 +2,7 @@
 #
 #   metoda logowania   JAK ktoś udowadnia, kim jest     (tu: kod na maila)
 #   reguła (policy)    KOGO wpuszczamy                   (tu: lista maili z grupy)
-#   aplikacja          CO chronimy                       (tu: host witkowska-dev.gugnowski.com)
+#   aplikacja          CO chronimy                       (tu: host automat-operat-dev.gugnowski.com)
 #
 # Aplikacja wskazuje regułę i dozwoloną metodę logowania. Reguła jest wielokrotnego
 # użytku — jedna grupa może chronić kilka aplikacji.
@@ -10,8 +10,8 @@
 # ── Grupy: z plików, nie ze zmiennej ──────────────────────────────────────────
 
 # Każda grupa to plik access/<nazwa>.json z listą maili, poza gitem. Pisze go ten setup.sh,
-# do którego grupa należy: „admin” — platformowy scripts/setup.sh, „witkowska” —
-# scripts/projects/witkowska/prod/setup.sh. Każdy skrypt dokłada tylko swój plik, więc
+# do którego grupa należy: „admin” — platformowy scripts/setup.sh, „automat-operat” —
+# scripts/projects/automat-operat/prod/setup.sh. Każdy skrypt dokłada tylko swój plik, więc
 # projekty nie nadpisują sobie nawzajem grup, a kolejność uruchamiania nie ma znaczenia.
 # (Jedna zmienna w jednym secrets.auto.tfvars zmusiłaby wszystkie skrypty do pisania
 # tego samego pliku.)

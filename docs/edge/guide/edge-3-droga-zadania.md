@@ -7,14 +7,14 @@ i przy każdym kroku zapisujemy: **kto** podejmuje decyzję i **który plik** j�
 Gdy potem będziesz czytać pliki (rozdziały 5–6), każdy zasób będzie miał swoje miejsce
 na tej drodze.
 
-Opisujemy produkcję — `witkowska.gugnowski.com`, grupa `witkowska` (Ty i ciocia). Dziś
-wystawiony jest tylko dev, `witkowska-dev.gugnowski.com` dla grupy `admin` (tylko Ty).
+Opisujemy produkcję — `automat-operat.gugnowski.com`, grupa `automat-operat` (Ty i ciocia). Dziś
+wystawiony jest tylko dev, `automat-operat-dev.gugnowski.com` dla grupy `admin` (tylko Ty).
 Droga jest identyczna; różni się nazwą hosta i listą osób.
 
 ```
- ciocia wpisuje https://witkowska.gugnowski.com
+ ciocia wpisuje https://automat-operat.gugnowski.com
    │
- ① DNS         witkowska.gugnowski.com → adres Cloudflare              dns.tf
+ ① DNS         automat-operat.gugnowski.com → adres Cloudflare              dns.tf
    │
  ② Cloudflare  certyfikat HTTPS, zakończenie TLS                     (automatycznie)
    │
@@ -22,20 +22,20 @@ Droga jest identyczna; różni się nazwą hosta i listą osób.
    │   nie → strona logowania → mail → kod → ciasteczko → wróć do ③
    │   tak ↓  dokleja token Access (JWT) do żądania
    │
- ④ tunel       które trasy? witkowska.gugnowski.com → Traefik           tunnel.tf
+ ④ tunel       które trasy? automat-operat.gugnowski.com → Traefik           tunnel.tf
    │           (połączenie otworzone wcześniej przez cloudflared)
    │
  ⑤ cloudflared czy token Access jest ważny i dla tej aplikacji?      tunnel.tf (access.required)
    │           tak → http://traefik.kube-system.svc.cluster.local:80  argocd/manifests/cloudflared/
    │
- ⑥ Traefik     Host: witkowska.gugnowski.com → który Ingress?          Ingress w projekcie
+ ⑥ Traefik     Host: automat-operat.gugnowski.com → który Ingress?          Ingress w projekcie
    │
  ⑦ Service → Pod aplikacji cioci                                     argocd/apps/projects/…
 ```
 
 ## ① DNS
 
-Telefon cioci pyta DNS o `witkowska.gugnowski.com`. Rekord (`dns.tf`) to CNAME na
+Telefon cioci pyta DNS o `automat-operat.gugnowski.com`. Rekord (`dns.tf`) to CNAME na
 `<id-tunelu>.cfargotunnel.com` z `proxied = true`. Cloudflare nie zdradza tej nazwy —
 odpowiada adresem własnego serwera, najbliższego cioci.
 
@@ -49,13 +49,13 @@ Cloudflare wystawia i odnawia sam, dla każdej strefy z proxied rekordami. Nie m
 
 ## ③ Access — bramkarz
 
-Cloudflare widzi, że host `witkowska.gugnowski.com` należy do aplikacji Access (`access.tf`,
-zasób `cloudflare_zero_trust_access_application.app["witkowska"]`). Sprawdza ciasteczko:
+Cloudflare widzi, że host `automat-operat.gugnowski.com` należy do aplikacji Access (`access.tf`,
+zasób `cloudflare_zero_trust_access_application.app["automat-operat"]`). Sprawdza ciasteczko:
 
 - **Nie ma albo wygasło** → przekierowanie na `gugnowski.cloudflareaccess.com`. Dzięki
   `auto_redirect_to_identity = true` od razu na formularz kodu (jest tylko jedna metoda
   logowania, więc ekran wyboru byłby zbędny). Ciocia wpisuje maila. Cloudflare sprawdza,
-  czy jakaś reguła aplikacji wpuszcza ten mail (`Grupa: witkowska`) — jeśli tak, wysyła
+  czy jakaś reguła aplikacji wpuszcza ten mail (`Grupa: automat-operat`) — jeśli tak, wysyła
   kod. Po wklejeniu kodu zapisuje ciasteczko na 30 dni i wraca do ③.
 - **Jest ważne** → żądanie idzie dalej z doklejonym tokenem Access (JWT) w nagłówku
   `Cf-Access-Jwt-Assertion` i mailem w `Cf-Access-Authenticated-User-Email`.
@@ -67,7 +67,7 @@ generuje ani jednego pakietu w Twojej sieci.
 
 Cloudflare wie, że rekord wskazuje na tunel `homelab`, i sprawdza jego trasy
 (`tunnel.tf`, zasób `cloudflare_zero_trust_tunnel_cloudflared_config`). Pierwsza pasująca
-reguła: `witkowska.gugnowski.com → http://traefik.kube-system.svc.cluster.local:80`.
+reguła: `automat-operat.gugnowski.com → http://traefik.kube-system.svc.cluster.local:80`.
 
 Żądanie leci do domu połączeniem, które cloudflared otworzył *wcześniej, od środka*.
 Router widzi tylko ruch w ramach połączenia wychodzącego — nie ma czego przekierowywać.
@@ -90,7 +90,7 @@ origin_request = {
 ```
 
 cloudflared sprawdza token z ③: czy jest podpisany przez Cloudflare Twojego zespołu i czy
-ma `aud` aplikacji `witkowska`. Jeśli nie — odrzuca żądanie i nie przekazuje go dalej.
+ma `aud` aplikacji `automat-operat`. Jeśli nie — odrzuca żądanie i nie przekazuje go dalej.
 
 **Po co, skoro Access już sprawdził?** Bo Access chroni tylko hosty, dla których istnieje
 aplikacja Access. Gdyby kiedyś w panelu ktoś (albo przyszły Ty) dodał rekord DNS na tunel
@@ -104,10 +104,10 @@ każda wymaga tokena *swojej* aplikacji.
 ## ⑥ Traefik
 
 cloudflared oddaje żądanie Traefikowi zwykłym HTTP (wewnątrz klastra, więc bez TLS).
-Nagłówek `Host` jest nadal `witkowska.gugnowski.com`, więc Traefik szuka Ingressu z tym hostem.
+Nagłówek `Host` jest nadal `automat-operat.gugnowski.com`, więc Traefik szuka Ingressu z tym hostem.
 
 Ingress **nie jest częścią edge**. Należy do projektu aplikacji (np. namespace
-`witkowska-dev`), obok jej Deploymentu i Service'u. Edge wpuszcza ruch do klastra;
+`automat-operat-dev`), obok jej Deploymentu i Service'u. Edge wpuszcza ruch do klastra;
 projekt decyduje, co z nim zrobić.
 
 **Gdy Ingressu jeszcze nie ma:** po zalogowaniu widzisz `404 page not found` od Traefika.
@@ -134,7 +134,7 @@ Service kieruje ruch do poda aplikacji. Aplikacja widzi zwykłe żądanie HTTP z
 
 Traefik słucha też w sieci domowej pod `192.168.0.119` (tak działa dziś
 `*.k8s.suwalski.internal`). Ktoś **w Twoim LAN-ie** może wysłać tam żądanie z nagłówkiem
-`Host: witkowska.gugnowski.com` i ominąć ③ oraz ⑤. Dla domowej sieci to akceptowalne.
+`Host: automat-operat.gugnowski.com` i ominąć ③ oraz ⑤. Dla domowej sieci to akceptowalne.
 Gdyby kiedyś nie było: aplikacja sama sprawdza podpis tokena z `Cf-Access-Jwt-Assertion`
 — wtedy bez przejścia przez Cloudflare nie ma jak go podrobić.
 

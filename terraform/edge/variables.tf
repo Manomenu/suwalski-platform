@@ -41,7 +41,7 @@ variable "apps" {
 
   validation {
     condition     = alltrue([for k in keys(var.apps) : can(regex("^[a-z0-9-]+$", k))])
-    error_message = "Klucz aplikacji to sama subdomena, np. \"witkowska-dev\" — bez kropek i domeny."
+    error_message = "Klucz aplikacji to sama subdomena, np. \"automat-operat-dev\" — bez kropek i domeny."
   }
 }
 

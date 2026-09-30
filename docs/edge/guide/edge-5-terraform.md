@@ -87,7 +87,7 @@ variable "apps" {
 }
 ```
 
-To **serce warstwy**. Klucz mapy to subdomena (`witkowska-dev`), a `access` to nazwa grupy, która
+To **serce warstwy**. Klucz mapy to subdomena (`automat-operat-dev`), a `access` to nazwa grupy, która
 może wejść. Z tej jednej mapy powstają: aplikacja Access, trasa tunelu i rekord DNS —
 zobaczysz to w plikach 6–8. Walidacja pilnuje, żeby klucz był samą subdomeną, bez kropek.
 
@@ -116,7 +116,7 @@ zone_name  = "gugnowski.com"
 team_name  = "UZUPELNIJ"
 
 apps = {
-  witkowska-dev = { access = "admin" }
+  automat-operat-dev = { access = "admin" }
 }
 ```
 
@@ -164,9 +164,9 @@ locals {
 }
 ```
 
-`fileset` zwraca nazwy plików pasujących do wzorca (`admin.json`, `witkowska.json`),
+`fileset` zwraca nazwy plików pasujących do wzorca (`admin.json`, `automat-operat.json`),
 `trimsuffix` robi z nich nazwy grup, a `jsondecode(file(…))` czyta listę maili. Wynik to
-zwykła mapa `{ admin = [...], witkowska = [...] }` — dalej używana tak, jakby była
+zwykła mapa `{ admin = [...], automat-operat = [...] }` — dalej używana tak, jakby była
 zmienną. `local` zamiast `var`, bo wartość nie przychodzi z zewnątrz przez `-var` czy
 `.tfvars`, tylko jest *wyliczana* z plików.
 
@@ -180,7 +180,7 @@ resource "cloudflare_zero_trust_access_policy" "group" {
 }
 ```
 
-`for_each` po mapie grup tworzy reguły `group["witkowska"]` i `group["admin"]`.
+`for_each` po mapie grup tworzy reguły `group["automat-operat"]` i `group["admin"]`.
 `include` działa jak **LUB**: wystarczy pasować do jednego wpisu. Wyrażenie `for`
 zamienia `["a@x", "b@y"]` na `[{email = {email = "a@x"}}, {email = {email = "b@y"}}]` —
 taki kształt narzuca API (podwójne `email` to nie literówka: pierwszy to *rodzaj* warunku,
@@ -295,7 +295,7 @@ resource "cloudflare_dns_record" "app" {
 
 - `data "cloudflare_zone"` — wyszukanie strefy po nazwie, żeby nie wpisywać Zone ID ręcznie.
   Stąd uprawnienie *Zone: Read* w tokenie.
-- `name` pełny, nie samo `witkowska-dev` — API zwraca pełną nazwę, a krótka w konfiguracji
+- `name` pełny, nie samo `automat-operat-dev` — API zwraca pełną nazwę, a krótka w konfiguracji
   dawałaby wieczną „zmianę” w każdym planie.
 - CNAME na `<id>.cfargotunnel.com` + `proxied = true` — rozdział 2, „DNS: proxied czy nie”.
 - `ttl = 1` — w API Cloudflare to „automatycznie”; przy proxied i tak decyduje Cloudflare.

@@ -1,4 +1,4 @@
-# Rekordy DNS: witkowska-dev.gugnowski.com → tunel.
+# Rekordy DNS: automat-operat-dev.gugnowski.com → tunel.
 #
 # Rekord to CNAME na <id-tunelu>.cfargotunnel.com, a nie A na jakiś adres IP — tunel nie
 # ma publicznego IP, istnieje tylko wewnątrz sieci Cloudflare. Stąd `proxied = true`:

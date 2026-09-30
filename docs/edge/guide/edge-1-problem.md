@@ -11,7 +11,7 @@ i żeby **nikt poza nami dwojgiem** nie mógł jej otworzyć.
 To są właściwie cztery osobne problemy:
 
 1. **Dojście** — ruch z internetu musi trafić do maszyny w domu.
-2. **Nazwa** — `witkowska-dev.gugnowski.com` musi prowadzić tam, a nie gdzie indziej.
+2. **Nazwa** — `automat-operat-dev.gugnowski.com` musi prowadzić tam, a nie gdzie indziej.
 3. **Szyfrowanie** — certyfikat HTTPS ważny dla tej nazwy.
 4. **Tożsamość** — ktoś musi sprawdzić, kim jest odwiedzający, *zanim* ruch dotknie klastra.
 

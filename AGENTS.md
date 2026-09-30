@@ -1,8 +1,8 @@
 # suwalski-platform
 
 Środowisko, na które deployuję. Proxmox udaje dostawcę chmury; wszystko, co w nim stoi,
-jest opisane kodem. To repo **decyduje, co biegnie** — obrazy publikuje
-`suwalski-investing-tools`.
+jest opisane kodem. To repo **decyduje, co biegnie** — obrazy publikują
+repozytoria projektów (`suwalski-investing-tools`, `automat-operat`).
 
 ## Układ
 

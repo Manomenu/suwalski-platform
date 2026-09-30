@@ -47,7 +47,7 @@ możesz go uruchomić, ma zwrócić `"status": "active"`.
 To skrypt **platformy**. Pyta o dotychczasowe wartości (Enter = bez zmian) i dwie nowe:
 
 - `CLOUDFLARE_API_TOKEN` — token z kroku 3 (nie wyświetla się przy wpisywaniu);
-- `ACCESS_ADMIN` — Twój mail (grupa `admin`, która wpuszcza na `witkowska-dev`).
+- `ACCESS_ADMIN` — Twój mail (grupa `admin`, która wpuszcza na `automat-operat-dev`).
 
 Przy pierwszym uruchomieniu rozłoży też stary `.secrets.env` na `.secrets/platform.env`
 i `.secrets/suwalski-investing-tools.env` — tego nie musisz robić ręcznie.
@@ -62,11 +62,11 @@ i `.secrets/suwalski-investing-tools.env` — tego nie musisz robić ręcznie.
 ```
 To „pominięte” jest oczekiwane — tunel powstanie w kroku 6.
 
-Grupa `witkowska` (Ty i ciocia) jest potrzebna dopiero produkcji. Możesz ją ustawić już
+Grupa `automat-operat` (Ty i ciocia) jest potrzebna dopiero produkcji. Możesz ją ustawić już
 teraz — `plan` wtedy stworzy od razu obie reguły — albo później, razem z produkcją:
 
 ```sh
-./scripts/projects/witkowska/prod/setup.sh     # ACCESS_WITKOWSKA: Twój i cioci, po przecinku
+./scripts/projects/automat-operat/prod/setup.sh     # ACCESS_AUTOMAT_OPERAT: Twój i cioci, po przecinku
 ```
 
 ## Krok 5 — init i plan
@@ -76,16 +76,16 @@ teraz — `plan` wtedy stworzy od razu obie reguły — albo później, razem z 
 just edge plan
 ```
 
-**Powinieneś zobaczyć** `Plan: 6 to add, 0 to change, 0 to destroy` (albo 7, jeśli ustawiłeś już grupę `witkowska`):
+**Powinieneś zobaczyć** `Plan: 6 to add, 0 to change, 0 to destroy` (albo 7, jeśli ustawiłeś już grupę `automat-operat`):
 
 | Zasób | Ile | Po co |
 | --- | --- | --- |
 | `cloudflare_zero_trust_access_identity_provider.otp` | 1 | kod na maila |
-| `cloudflare_zero_trust_access_policy.group["admin"]` (+ `["witkowska"]`) | 1 (2) | reguły grup |
-| `cloudflare_zero_trust_access_application.app["witkowska-dev"]` | 1 | ochrona hosta |
+| `cloudflare_zero_trust_access_policy.group["admin"]` (+ `["automat-operat"]`) | 1 (2) | reguły grup |
+| `cloudflare_zero_trust_access_application.app["automat-operat-dev"]` | 1 | ochrona hosta |
 | `cloudflare_zero_trust_tunnel_cloudflared.homelab` | 1 | tunel |
 | `cloudflare_zero_trust_tunnel_cloudflared_config.homelab` | 1 | trasy |
-| `cloudflare_dns_record.app["witkowska-dev"]` | 1 | rekord |
+| `cloudflare_dns_record.app["automat-operat-dev"]` | 1 | rekord |
 
 Przeczytaj plan. Sprawdź zwłaszcza, że w `include` reguł są właściwe maile, a w rekordzie
 `proxied = true`. Zasada z `AGENTS.md`: coś w kolumnie „destroy”, czego się nie
@@ -98,7 +98,7 @@ just edge apply
 ```
 
 **Powinieneś zobaczyć:** `Apply complete! Resources: 6 added` (albo 7) i sekcję „Dalej” z adresem
-`https://witkowska-dev.gugnowski.com`. W panelu Zero Trust → *Networks → Tunnels* pojawia się
+`https://automat-operat-dev.gugnowski.com`. W panelu Zero Trust → *Networks → Tunnels* pojawia się
 tunel `homelab` ze statusem **Inactive** — jeszcze nikt się z nim nie łączy.
 
 ## Krok 7 — token do klastra
@@ -129,7 +129,7 @@ na **Healthy**.
 
 ## Krok 9 — test całej drogi
 
-W oknie incognito otwórz `https://witkowska-dev.gugnowski.com`.
+W oknie incognito otwórz `https://automat-operat-dev.gugnowski.com`.
 
 1. **Formularz kodu Cloudflare** — to krok ③ z rozdziału 3. Wpisz swój mail.
 2. **Kod w skrzynce** (sprawdź spam) → wklej.
@@ -137,16 +137,16 @@ W oknie incognito otwórz `https://witkowska-dev.gugnowski.com`.
    brakuje tylko aplikacji z Ingressem na ten host.
 
 Druga próba, z **mailem cioci**: formularz przyjmie adres, ale **kod nie przyjdzie**.
-Tak ma być — dev wpuszcza tylko grupę `admin`, a ciocia jest w grupie `witkowska`.
+Tak ma być — dev wpuszcza tylko grupę `admin`, a ciocia jest w grupie `automat-operat`.
 To od razu sprawdza, że grupy są rozdzielone.
 
-Próbne logowanie cioci zrobisz, gdy dojdzie produkcja (`witkowska = { access =
-"witkowska" }`, rozdział 8). Wtedy przez telefon: jej pierwszy mail z kodem może
+Próbne logowanie cioci zrobisz, gdy dojdzie produkcja (`automat-operat = { access =
+"automat-operat" }`, rozdział 8). Wtedy przez telefon: jej pierwszy mail z kodem może
 wylądować w spamie — niech oznaczy go jako „nie spam”.
 
 ## Co dalej
 
-404 zamieni się w aplikację, gdy w projekcie (np. `argocd/apps/projects/witkowska-dev.yaml`)
-pojawi się Ingress z hostem `witkowska-dev.gugnowski.com` — [rozdział 8](edge-8-codzienna-praca.md).
+404 zamieni się w aplikację, gdy w projekcie (np. `argocd/apps/projects/automat-operat-dev.yaml`)
+pojawi się Ingress z hostem `automat-operat-dev.gugnowski.com` — [rozdział 8](edge-8-codzienna-praca.md).
 
 [następny: codzienna praca →](edge-8-codzienna-praca.md)
