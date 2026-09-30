@@ -51,7 +51,7 @@ tunel. Kto ma token, może podpiąć własnego cloudflared i przejąć ruch. St�
 zamieszanie z trzymaniem go poza gitem (rozdział 4).
 
 **Trasy tunelu (ingress rules)** — lista „host → dokąd oddać”. Np.
-`witkowska-dev.gugnowski.com → http://traefik.kube-system.svc.cluster.local:80`. Mogą leżeć
+`automat-operat-dev.gugnowski.com → http://traefik.kube-system.svc.cluster.local:80`. Mogą leżeć
 w pliku przy cloudflared albo w Cloudflare. U nas leżą w Cloudflare (`config_src =
 "cloudflare"`) i opisuje je Terraform — cloudflared pobiera je sam po podłączeniu.
 
@@ -67,8 +67,8 @@ z trzech klocków, i to jest najważniejszy fragment tego rozdziału:
 | Klocek | Pytanie | U nas |
 | --- | --- | --- |
 | **Metoda logowania** (identity provider, IdP) | *Jak* ktoś udowadnia, kim jest? | One-time PIN — kod na maila |
-| **Reguła** (policy) | *Kogo* wpuszczamy? | „Grupa: witkowska” — lista maili |
-| **Aplikacja** (application) | *Co* chronimy? | host `witkowska-dev.gugnowski.com` |
+| **Reguła** (policy) | *Kogo* wpuszczamy? | „Grupa: automat-operat” — lista maili |
+| **Aplikacja** (application) | *Co* chronimy? | host `automat-operat-dev.gugnowski.com` |
 
 Aplikacja wskazuje regułę (lub kilka) i dozwolone metody logowania. Reguły są
 wielokrotnego użytku: jedna grupa może chronić wiele aplikacji.
@@ -90,7 +90,7 @@ token Access** (JWT) w nagłówku `Cf-Access-Jwt-Assertion`. Mówi on: „ten cz
 Cloudflare.
 
 **aud (audience tag)** — identyfikator konkretnej aplikacji Access, wpisany w token.
-Dzięki niemu token wydany dla `witkowska-dev.gugnowski.com` nie przejdzie jako przepustka do
+Dzięki niemu token wydany dla `automat-operat-dev.gugnowski.com` nie przejdzie jako przepustka do
 innej aplikacji.
 
 Ten token jest podstawą naszej **drugiej linii obrony**: cloudflared sprawdza go sam

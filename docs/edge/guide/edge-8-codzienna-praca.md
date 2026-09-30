@@ -14,7 +14,7 @@ Przepisy na rzeczy, które będziesz robić co jakiś czas. Każdy zaczyna się 
 
 ## Wystawić nową aplikację
 
-Przykład: aplikacja cioci w namespace `witkowska-prod`, pod `witkowska.gugnowski.com`.
+Przykład: aplikacja cioci w namespace `automat-operat-prod`, pod `automat-operat.gugnowski.com`.
 
 **1. Strona projektu — Ingress w klastrze.** W manifestach / charcie aplikacji:
 
@@ -22,29 +22,29 @@ Przykład: aplikacja cioci w namespace `witkowska-prod`, pod `witkowska.gugnowsk
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: witkowska
-  namespace: witkowska-prod
+  name: automat-operat
+  namespace: automat-operat-prod
 spec:
   ingressClassName: traefik
   rules:
-    - host: witkowska.gugnowski.com        # dokładnie ten host, który jest w edge
+    - host: automat-operat.gugnowski.com        # dokładnie ten host, który jest w edge
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
-              service: { name: witkowska, port: { number: 80 } }
+              service: { name: automat-operat, port: { number: 80 } }
 ```
 
-I Application w `argocd/apps/projects/witkowska-prod.yaml`, który wskazuje, gdzie te
+I Application w `argocd/apps/projects/automat-operat-prod.yaml`, który wskazuje, gdzie te
 manifesty leżą (repo aplikacji, jak investing-tools).
 
-**2. Strona edge — wpis w mapie.** Jeśli host jest nowy (`witkowska-dev` już jest; tu dokładamy produkcję):
+**2. Strona edge — wpis w mapie.** Jeśli host jest nowy (`automat-operat-dev` już jest; tu dokładamy produkcję):
 
 ```hcl
 apps = {
-  witkowska-dev = { access = "admin" }       # dev — tylko Ty
-  witkowska     = { access = "witkowska" }   # ← nowa linijka: produkcja, Ty i ciocia
+  automat-operat-dev = { access = "admin" }            # dev — tylko Ty
+  automat-operat     = { access = "automat-operat" }   # ← nowa linijka: produkcja, Ty i ciocia
 }
 ```
 
@@ -58,11 +58,11 @@ Jedna linijka tworzy wszystkie trzy rzeczy naraz — rozdział 5, „Najważniej
 ## Dopisać albo usunąć osobę
 
 Listę osób grupy trzyma skrypt, do którego grupa należy — nie platforma. Dla grupy
-`witkowska`:
+`automat-operat`:
 
 ```sh
-./scripts/projects/witkowska/prod/setup.sh   # ACCESS_WITKOWSKA: nowa lista po przecinku
-just edge plan                               # ~ zmiana reguły "Grupa: witkowska" — sprawdź include
+./scripts/projects/automat-operat/prod/setup.sh   # ACCESS_AUTOMAT_OPERAT: nowa lista po przecinku
+just edge plan                               # ~ zmiana reguły "Grupa: automat-operat" — sprawdź include
 just edge apply
 ```
 
@@ -81,12 +81,12 @@ argocd = { access = "admin" }
 ```
 
 Nowa grupa to jedno wywołanie `zapisz_grupe <nazwa> "<maile>"` w setup.sh, do którego
-należy — tak jak w `scripts/projects/witkowska/prod/setup.sh`. Powstaje plik
+należy — tak jak w `scripts/projects/automat-operat/prod/setup.sh`. Powstaje plik
 `terraform/edge/access/<nazwa>.json`, a `access.tf` podchwyci go sam.
 
 ## Nowy projekt albo środowisko
 
-Skopiuj `scripts/projects/witkowska/dev/setup.sh` do
+Skopiuj `scripts/projects/automat-operat/dev/setup.sh` do
 `scripts/projects/<projekt>/<środowisko>/setup.sh` i popraw nazwy. Każdy skrypt czyta
 i pisze tylko swój plik w `.secrets/`, więc projekty sobie nie przeszkadzają.
 

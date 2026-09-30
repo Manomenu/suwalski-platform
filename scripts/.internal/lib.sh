@@ -6,7 +6,7 @@
 # → rozprowadź (tfvars, pliki dla edge, Secrety w klastrze). Tu są kroki, które się powtarzają.
 #
 # Źródła leżą w .secrets/ w korzeniu repo, po pliku na zakres (platform.env,
-# witkowska-prod.env…), poza gitem. Każdy skrypt czyta i pisze WYŁĄCZNIE swój plik.
+# automat-operat-prod.env…), poza gitem. Każdy skrypt czyta i pisze WYŁĄCZNIE swój plik.
 
 SECRETS_DIR="$ROOT/.secrets"
 declare -gA OBECNE=()
@@ -135,4 +135,30 @@ secret() {
     kubectl create secret generic "$nazwa" --namespace "$ns" "${args[@]}" \
         --dry-run=client -o yaml | kubectl apply -f - >/dev/null
     echo "  Secret $nazwa w przestrzeni $ns: aktualny"
+}
+
+# secret_rejestru NAMESPACE NAZWA SERWER UŻYTKOWNIK TOKEN — Secret typu docker-registry, po
+# który sięga imagePullSecrets, gdy obrazy leżą w prywatnym rejestrze (np. GHCR prywatnego
+# repo). Idempotentnie, jak `secret`.
+secret_rejestru() {
+    local ns="$1" nazwa="$2" serwer="$3" uzytkownik="$4" token="$5"
+    kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    kubectl create secret docker-registry "$nazwa" --namespace "$ns" \
+        --docker-server="$serwer" --docker-username="$uzytkownik" --docker-password="$token" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    echo "  Secret $nazwa (rejestr $serwer) w przestrzeni $ns: aktualny"
+}
+
+# repo_argo NAZWA URL PLIK_KLUCZA — dostęp Argo CD do prywatnego repo po SSH. Argo rozpoznaje
+# takie Secrety po etykiecie secret-type=repository i dopasowuje je do Application po `url`,
+# więc URL musi być co do znaku taki jak repoURL w argocd/apps/. Klucz to deploy key repo:
+# tylko do odczytu i tylko do tego jednego repo.
+repo_argo() {
+    local nazwa="$1" url="$2" klucz="$3"
+    kubectl create secret generic "$nazwa" --namespace argocd \
+        --from-literal=type=git --from-literal=url="$url" --from-file=sshPrivateKey="$klucz" \
+        --dry-run=client -o yaml \
+        | kubectl label --local -f - argocd.argoproj.io/secret-type=repository -o yaml \
+        | kubectl apply -f - >/dev/null
+    echo "  Secret $nazwa w przestrzeni argocd (repo $url): aktualny"
 }

@@ -7,7 +7,7 @@ zdradza — i od razu mówi, czy szukać w Cloudflare, czy w klastrze.
 
 | Objaw | Krok | Gdzie szukać |
 | --- | --- | --- |
-| „Nie można znaleźć serwera” | ① DNS | rekord w `dns.tf`, `dig witkowska-dev.gugnowski.com` |
+| „Nie można znaleźć serwera” | ① DNS | rekord w `dns.tf`, `dig automat-operat-dev.gugnowski.com` |
 | Nie ma formularza kodu, od razu treść / 404 | ③ Access | aplikacja w `access.tf` dla tego hosta |
 | Kod nie przychodzi | ③ Access | spam; czy mail jest w `terraform/edge/access/<grupa>.json` |
 | Błąd Cloudflare **1033** | ④ tunel | cloudflared w klastrze nie ma połączenia |
@@ -22,7 +22,7 @@ zdradza — i od razu mówi, czy szukać w Cloudflare, czy w klastrze.
 just edge tunnel                        # pody cloudflared + ostatnie linie logu
 just argo apps                          # czy Application cloudflared jest Synced/Healthy
 just edge plan                          # czy Cloudflare zgadza się z kodem (drift)
-dig +short witkowska-dev.gugnowski.com      # adresy Cloudflare = rekord jest proxied
+dig +short automat-operat-dev.gugnowski.com      # adresy Cloudflare = rekord jest proxied
 ```
 
 Panel: Zero Trust → *Networks → Tunnels* (status tunelu i connectory),

@@ -102,7 +102,7 @@ Co zyskujemy:
 Dlatego w `argocd/apps/` są dwa podkatalogi — rozróżnienie dla ludzi, nie dla Argo:
 
 - `platform/` — jedno na klaster (cloudflared; w przyszłości np. monitoring);
-- `projects/` — aplikacje, po pliku na projekt i środowisko (np. `witkowska-dev.yaml`).
+- `projects/` — aplikacje, po pliku na projekt i środowisko (np. `automat-operat-dev.yaml`).
 
 ## Czemu jeden cloudflared na klaster, a nie na projekt
 

@@ -1,7 +1,7 @@
 # Warstwa edge — przewodnik
 
 Warstwa `edge` to **wejście z internetu do homelabu**. Dzięki niej aplikacja z k3s jest
-dostępna pod `https://witkowska-dev.gugnowski.com`, ale tylko dla osób z listy, i bez otwierania
+dostępna pod `https://automat-operat-dev.gugnowski.com`, ale tylko dla osób z listy, i bez otwierania
 jakiegokolwiek portu w domowym routerze.
 
 Składa się z trzech kawałków, które leżą w różnych miejscach repo:

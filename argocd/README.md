@@ -9,7 +9,7 @@ apps/                                 Application'y — root app czyta ten katal
 │   └── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
 └── projects/                         aplikacje — po pliku na projekt i środowisko
     ├── suwalski-investing-tools.yaml namespace suw-inv-tools
-    └── witkowska-dev.yaml            ⚠ test: investing-tools pod witkowska-dev.gugnowski.com
+    └── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
 manifests/                            manifesty elementów platformy, które nie mają własnego repo
 └── cloudflared/
     └── deployment.yaml
@@ -22,7 +22,7 @@ nim biegnie: wejście z internetu (cloudflared), w przyszłości np. cert-manage
 monitoring. Jedna sztuka na klaster, własna przestrzeń nazw.
 
 **projects/** — aplikacja, dla której klaster w ogóle istnieje. Po pliku na projekt
-i środowisko (np. `witkowska-dev.yaml`, `witkowska-prod.yaml`), każdy we własnej
+i środowisko (np. `automat-operat-dev.yaml`, `automat-operat-prod.yaml`), każdy we własnej
 przestrzeni nazw.
 
 To rozróżnienie jest tylko dla ludzi: dla Argo oba katalogi to po prostu Application'y.

@@ -1,0 +1,44 @@
+# automat-operat / dev — automat-operat (automatyzacja operatów szacunkowych) dla cioci.
+#
+# Droga z internetu: automat-operat-dev.gugnowski.com → Cloudflare Access (grupa „admin”)
+# → tunel → cloudflared → Traefik → Ingress w TEJ przestrzeni nazw → nginx (web) → /api → server.
+#
+# Repo z kodem jest prywatne. Argo czyta je kluczem deploy, a k3s pobiera obrazy z GHCR
+# tokenem — oba Secrety zakłada scripts/projects/automat-operat/dev/setup.sh. Bez nich Argo
+# pokaże „repository not found”, a pody ImagePullBackOff.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: automat-operat-dev
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    # SSH, nie https: Secret repo-automat-operat pasuje do Application po URL-u co do znaku.
+    repoURL: git@github.com:Manomenu/automat-operat.git
+    targetRevision: master
+    path: deploy/chart
+    helm:
+      parameters:
+        # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
+        - name: image.tag
+          value: sha-593d349
+        # Secret docker-registry z setup.sh — obrazy prywatnego repo są prywatne.
+        - name: image.pullSecret
+          value: ghcr-pull
+        # Host z terraform/edge/edge.auto.tfvars (apps.automat-operat-dev). Musi się zgadzać
+        # co do znaku — inaczej Traefik odpowie 404, choć logowanie i tunel działają.
+        - name: ingress.host
+          value: automat-operat-dev.gugnowski.com
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: automat-operat-dev
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

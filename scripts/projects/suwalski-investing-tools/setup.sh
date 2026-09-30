@@ -4,7 +4,7 @@
 #   .secrets/suwalski-investing-tools.env ──>  Secret suwalski-sec (namespace suw-inv-tools)
 #
 # Projekt ma jedno środowisko, więc skrypt leży bezpośrednio w katalogu projektu. Gdy dojdą
-# dev/prod, rozdziel go jak scripts/projects/witkowska/.
+# dev/prod, rozdziel go jak scripts/projects/automat-operat/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 source "$ROOT/scripts/.internal/lib.sh"

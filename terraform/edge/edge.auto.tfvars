@@ -9,8 +9,8 @@ zone_name  = "gugnowski.com"
 team_name  = "gugnowski" # <team>.cloudflareaccess.com
 
 apps = {
-  # witkowska-dev.gugnowski.com — wersja dev (namespace witkowska-dev), tylko dla Ciebie.
-  # Produkcja dojdzie jako `witkowska = { access = "witkowska" }` — grupa „witkowska”
+  # automat-operat-dev.gugnowski.com — wersja dev (namespace automat-operat-dev), tylko dla Ciebie.
+  # Produkcja dojdzie jako `automat-operat = { access = "automat-operat" }` — grupa „automat-operat”
   # to Ty i ciocia.
-  witkowska-dev = { access = "admin" }
+  automat-operat-dev = { access = "admin" }
 }
