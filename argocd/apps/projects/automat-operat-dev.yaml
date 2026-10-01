@@ -27,7 +27,7 @@ spec:
       parameters:
         # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
         - name: image.tag
-          value: sha-593d349
+          value: sha-88e292e
         # Secret docker-registry z setup.sh — obrazy prywatnego repo są prywatne.
         - name: image.pullSecret
           value: ghcr-pull
