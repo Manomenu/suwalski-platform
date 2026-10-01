@@ -5,7 +5,7 @@
 #                                 └──>  Secrety w namespace automat-operat-prod     (gdy apka ich zechce)
 #
 # Grupa „automat-operat” (Ty i ciocia) należy do produkcji: to ona wpuszcza na
-# automat-operat.gugnowski.com. Dev (automat-operat-dev) wpuszcza tę samą grupę.
+# automat-operat.gugnowski.com. Dev ma własną grupę „automat-operat-dev” (dev/setup.sh).
 # Po zmianie listy osób: just edge plan → just edge apply.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"

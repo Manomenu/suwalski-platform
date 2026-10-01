@@ -10,7 +10,8 @@
 # ── Grupy: z plików, nie ze zmiennej ──────────────────────────────────────────
 
 # Każda grupa to plik access/<nazwa>.json z listą maili, poza gitem. Pisze go ten setup.sh,
-# do którego grupa należy: „admin” — platformowy scripts/setup.sh, „automat-operat” —
+# do którego grupa należy: „admin” — platformowy scripts/setup.sh, „automat-operat-dev” —
+# scripts/projects/automat-operat/dev/setup.sh, „automat-operat” —
 # scripts/projects/automat-operat/prod/setup.sh. Każdy skrypt dokłada tylko swój plik, więc
 # projekty nie nadpisują sobie nawzajem grup, a kolejność uruchamiania nie ma znaczenia.
 # (Jedna zmienna w jednym secrets.auto.tfvars zmusiłaby wszystkie skrypty do pisania

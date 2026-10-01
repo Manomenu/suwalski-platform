@@ -6,7 +6,8 @@ maili. Pliki `*.json` są **poza gitem** (repo jest publiczne) — generują je 
 | Plik | Pisze go | Kto |
 | --- | --- | --- |
 | `admin.json` | `scripts/setup.sh` | Ty |
-| `automat-operat.json` | `scripts/projects/automat-operat/prod/setup.sh` | Ty i ciocia |
+| `automat-operat-dev.json` | `scripts/projects/automat-operat/dev/setup.sh` | Ty i osoby testujące dev |
+| `automat-operat.json` | `scripts/projects/automat-operat/prod/setup.sh` | Ty i ciocia (produkcja) |
 
 Kształt:
 
