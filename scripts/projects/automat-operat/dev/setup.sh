@@ -8,8 +8,8 @@
 # Argo — żeby przeczytać chart z gita, k3s — żeby pobrać obrazy z GHCR. Obie tylko do
 # odczytu.
 #
-# Dostęp do automat-operat-dev.gugnowski.com daje grupa „admin” z platformy (scripts/setup.sh),
-# więc ten skrypt nie ma własnej grupy.
+# Dostęp do automat-operat-dev.gugnowski.com daje grupa „automat-operat”, którą pisze
+# scripts/projects/automat-operat/prod/setup.sh, więc ten skrypt nie ma własnej grupy.
 #
 # Klucz deploy należy do repo, nie do środowiska. Gdy dojdzie prod, przenieś go do
 # wspólnego scripts/projects/automat-operat/setup.sh, zamiast generować drugi.

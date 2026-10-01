@@ -1,6 +1,6 @@
 # automat-operat / dev — automat-operat (automatyzacja operatów szacunkowych) dla cioci.
 #
-# Droga z internetu: automat-operat-dev.gugnowski.com → Cloudflare Access (grupa „admin”)
+# Droga z internetu: automat-operat-dev.gugnowski.com → Cloudflare Access (grupa „automat-operat”)
 # → tunel → cloudflared → Traefik → Ingress w TEJ przestrzeni nazw → nginx (web) → /api → server.
 #
 # Repo z kodem jest prywatne. Argo czyta je kluczem deploy, a k3s pobiera obrazy z GHCR
