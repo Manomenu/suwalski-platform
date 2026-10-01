@@ -118,5 +118,12 @@ zaczniesz cokolwiek kopiować, bo wybór podejścia decyduje o tym, czy wydziela
   środowisko zawsze najnowsze.
 - **`.terraform.lock.hcl` commitujemy**, `*.tfstate` nie. Lockfile jest kontrolowany
   ręcznie; stan jest generowany i opisuje żywą infrastrukturę.
+- **Każda Application projektu (`argocd/apps/projects/`) ma finalizer**
+  `resources-finalizer.argocd.argoproj.io` w `metadata.finalizers`. Root app prunuje
+  Application, której pliku już nie ma w gicie — ale bez finalizera Argo usuwa sam obiekt
+  Application, a deploymenty, Ingressy i Secrety projektu zostają w klastrze, osierocone
+  i dalej działające (tak zostało `witkowska-dev` po zmianie nazwy). Z finalizerem
+  usunięcie lub przemianowanie pliku sprząta całe wdrożenie. Wyjątek: zasoby z adnotacją
+  `argocd.argoproj.io/sync-options: Delete=false` (np. PVC z danymi) przeżywają celowo.
 - **Przed `apply` zawsze `plan`.** Cokolwiek w kolumnie „destroy", czego się nie
   spodziewałeś, jest powodem, żeby się zatrzymać.
