@@ -112,6 +112,9 @@ zaczniesz cokolwiek kopiować, bo wybór podejścia decyduje o tym, czy wydziela
 
 ## Zasady
 
+- **Commity robi wyłącznie właściciel repo.** Agent nie robi `commit`, `--amend`, `reset`,
+  `rebase` ani `push` — zostawia zmiany w drzewie roboczym do przejrzenia, nawet gdy są
+  skończone i sprawdzone.
 - **Nie klikaj w interfejsie Proxmoksa.** Zmiana zrobiona ręcznie zniknie przy najbliższym
   `apply`, a do tego czasu kod będzie kłamał o stanie środowiska.
 - **Wersje są przypięte** — k3s, provider, obraz systemu. Środowisko odtwarzalne bije
