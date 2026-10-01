@@ -25,7 +25,7 @@ Mail cioci nie daje nikomu władzy nad niczym. Ale `suwalski-platform` jest publ
 naruszenie prywatności. Dlatego:
 
 - w gicie (`edge.auto.tfvars`) jest tylko **nazwa grupy**, którą aplikacja wpuszcza:
-  `automat-operat-dev = { access = "admin" }`;
+  `automat-operat-dev = { access = "automat-operat-dev" }`;
 - kto należy do grupy — lista maili — jest w pliku `terraform/edge/access/<grupa>.json`,
   poza gitem.
 
@@ -70,8 +70,9 @@ scripts/projects/automat-operat/prod/setup.sh     PROJEKT automat-operat, środo
     └─> terraform/edge/access/automat-operat.json grupa „automat-operat”: Ty i ciocia
 
 scripts/projects/automat-operat/dev/setup.sh      PROJEKT automat-operat, środowisko dev
-    pyta o: GHCR_USER, GHCR_TOKEN (dev wpuszcza grupę „admin” z platformy)
+    pyta o: ACCESS_AUTOMAT_OPERAT_DEV, GHCR_USER, GHCR_TOKEN
     ├─> .secrets/automat-operat-dev.env
+    ├─> terraform/edge/access/automat-operat-dev.json grupa „automat-operat-dev”: Ty i testujący
     ├─> .secrets/automat-operat-deploy-key        generowany; publiczna połowa → GitHub
     ├─> Secret repo-automat-operat w argocd       Argo czyta prywatne repo
     └─> Secret ghcr-pull w automat-operat-dev     k3s pobiera prywatne obrazy

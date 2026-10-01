@@ -2,14 +2,16 @@
 # Sekrety projektu automat-operat, środowisko dev. Idempotentne.
 #
 #   .secrets/automat-operat-deploy-key  ──>  Secret repo-automat-operat (namespace argocd)
-#   .secrets/automat-operat-dev.env     ──>  Secret ghcr-pull           (namespace automat-operat-dev)
+#   .secrets/automat-operat-dev.env     ──┬──>  terraform/edge/access/automat-operat-dev.json  (grupa „automat-operat-dev”)
+#                                         └──>  Secret ghcr-pull           (namespace automat-operat-dev)
 #
 # Apka to prywatne repo Manomenu/automat-operat, więc klaster potrzebuje dwóch przepustek:
 # Argo — żeby przeczytać chart z gita, k3s — żeby pobrać obrazy z GHCR. Obie tylko do
 # odczytu.
 #
-# Dostęp do automat-operat-dev.gugnowski.com daje grupa „automat-operat”, którą pisze
-# scripts/projects/automat-operat/prod/setup.sh, więc ten skrypt nie ma własnej grupy.
+# Dostęp do automat-operat-dev.gugnowski.com daje WŁASNA grupa dev, „automat-operat-dev”:
+# Ty i osoby testujące. Celowo nie grupa produkcji — zmiana listy osób na produkcji nie może
+# po cichu zmieniać, kto wchodzi na dev, i odwrotnie. Po zmianie listy: just edge plan → apply.
 #
 # Klucz deploy należy do repo, nie do środowiska. Gdy dojdzie prod, przenieś go do
 # wspólnego scripts/projects/automat-operat/setup.sh, zamiast generować drugi.
@@ -38,10 +40,14 @@ else
     echo "  istnieje — bez zmian"
 fi
 
-# ── token do GHCR ─────────────────────────────────────────────────────────────
+# ── dostęp i token do GHCR ────────────────────────────────────────────────────
 wczytaj_zrodlo automat-operat-dev
 echo
 echo "  źródło: ${ZRODLO#"$ROOT"/}"
+
+zapytaj ACCESS_AUTOMAT_OPERAT_DEV \
+    "Maile grupy 'automat-operat-dev', po przecinku — kto wchodzi na automat-operat-dev.gugnowski.com (Ty i osoby testujące)" \
+    ""
 
 zapytaj GHCR_USER \
     "Użytkownik GitHuba, do którego należy token" \
@@ -52,7 +58,11 @@ zapytaj GHCR_TOKEN \
     "" cicho
 
 echo
-zapisz_zrodlo GHCR_USER GHCR_TOKEN
+zapisz_zrodlo ACCESS_AUTOMAT_OPERAT_DEV GHCR_USER GHCR_TOKEN
+
+echo
+echo "== terraform/edge =="
+zapisz_grupe automat-operat-dev "${OBECNE[ACCESS_AUTOMAT_OPERAT_DEV]}"
 
 # ── klaster ───────────────────────────────────────────────────────────────────
 echo

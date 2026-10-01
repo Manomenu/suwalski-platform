@@ -43,8 +43,8 @@ manifesty leżą (repo aplikacji, jak investing-tools).
 
 ```hcl
 apps = {
-  automat-operat-dev = { access = "admin" }            # dev — tylko Ty
-  automat-operat     = { access = "automat-operat" }   # ← nowa linijka: produkcja, Ty i ciocia
+  automat-operat-dev = { access = "automat-operat-dev" }   # dev — Ty i testujący
+  automat-operat     = { access = "automat-operat" }       # ← nowa linijka: produkcja, Ty i ciocia
 }
 ```
 

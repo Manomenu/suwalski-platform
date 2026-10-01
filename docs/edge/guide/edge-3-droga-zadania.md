@@ -8,7 +8,8 @@ Gdy potem będziesz czytać pliki (rozdziały 5–6), każdy zasób będzie mia�
 na tej drodze.
 
 Opisujemy produkcję — `automat-operat.gugnowski.com`, grupa `automat-operat` (Ty i ciocia). Dziś
-wystawiony jest tylko dev, `automat-operat-dev.gugnowski.com` dla grupy `admin` (tylko Ty).
+wystawiony jest tylko dev, `automat-operat-dev.gugnowski.com` dla własnej grupy `automat-operat-dev`
+(Ty i osoby testujące).
 Droga jest identyczna; różni się nazwą hosta i listą osób.
 
 ```
