@@ -11,6 +11,10 @@ kind: Application
 metadata:
   name: suwalski-investing-tools
   namespace: argocd
+  # Usunięcie Application kasuje też wszystko, co wdrożyła — patrz AGENTS.md, Zasady.
+  # PVC z cache ma Delete=false i przeżywa to celowo.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 

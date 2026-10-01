@@ -11,6 +11,10 @@ kind: Application
 metadata:
   name: automat-operat-dev
   namespace: argocd
+  # Usunięcie Application (plik znika z gita → root ją prunuje) kasuje też wszystko, co
+  # wdrożyła. Bez tego zasoby zostają w klastrze osierocone — patrz AGENTS.md, Zasady.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
