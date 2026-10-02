@@ -25,7 +25,6 @@ spec:
     helm:
       parameters:
         # ↓ THIS ONE LINE IS THE DEPLOYMENT.
-        # In Phase 6 CI will bump it with a commit; today you change it by hand.
         - name: image.tag
           value: sha-737aec8
 

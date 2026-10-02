@@ -6,13 +6,16 @@ uruchamia się żadnych poleceń**.
 ```
 apps/                                 Application'y — root app czyta ten katalog rekurencyjnie
 ├── platform/                         wspólne dla całego klastra, jedno na klaster
-│   └── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
+│   ├── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
+│   └── nas-storage.yaml              klasa storage „nas” — dysk na NAS-ie (docs/nas.md)
 └── projects/                         aplikacje — po pliku na projekt i środowisko
     ├── suwalski-investing-tools.yaml namespace suw-inv-tools
     └── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
 manifests/                            manifesty elementów platformy, które nie mają własnego repo
-└── cloudflared/
-    └── deployment.yaml
+├── cloudflared/                      para z apps/platform/cloudflared.yaml
+│   └── deployment.yaml
+└── nas-storage/                      para z apps/platform/nas-storage.yaml
+    └── provisioner.yaml
 ```
 
 ## platform/ czy projects/
@@ -40,8 +43,6 @@ kroku `apply` i nie powinno być. Jeśli ma być dostępna z internetu, dopisz j
 Zmień `image.tag` w pliku aplikacji i wypchnij. To **jedyna** zmiana potrzebna do
 wdrożenia — i dlatego `git log` na tym pliku jest historią wdrożeń, a `git revert`
 wycofaniem.
-
-Od Fazy 6 robi to CI: buduje obraz, po czym commituje podbicie tej linijki.
 
 Elementy platformy z `manifests/` aktualizuje się tak samo: zmiana wersji obrazu
 w manifeście, commit, push.

@@ -158,42 +158,13 @@ To jest główny powód, dla którego to zadanie wymaga własnej sesji i spokoju
 
 ## Jakość repo na poziomie automat-operat
 
-**Status:** zapisane, do osobnej sesji.
+**Status:** zrobione 2.10.2026 — `just check` (11 kroków) i CI `.github/workflows/check.yml`;
+zasady w AGENTS.md („Gdzie co leży”, „Bramka jakości”). Przegląd struktury: układ jest
+spójny, poprawione były tylko nieaktualne opisy (README, `argocd/README.md`) i zdublowane
+`just <warstwa> validate`, które przy okazji przepisywały pliki.
 
-W `automat-operat` jedno polecenie (`just check`, w CI ten sam skrypt) sprawdza wszystko,
-co da się sprawdzić bez ludzi. Tutaj każda warstwa ma tylko `just <warstwa> validate`
-(`fmt` + `validate`), skrypty i manifesty nie są sprawdzane wcale. Testów pisać nie musimy —
-chodzi o linty, sanity checki i to, czy całość „się kompiluje”.
-
-### Co powinien łapać `just check`
-
-| Obszar | Sprawdzenie | Bez dostępu do klastra? |
-| --- | --- | --- |
-| Terraform (wszystkie warstwy) | `tofu fmt -check`, `tofu validate`, tflint (z regułami providera) | tak |
-| Bash (`scripts/`, `.just/lib/`) | shellcheck, shfmt | tak |
-| just | `just --fmt --check --unstable` dla `justfile` i `.just/*.just` | tak |
-| Manifesty (`argocd/`) | kubeconform ze schematami (także CRD Application), yamllint | tak |
-| Reguły z AGENTS.md | skrypt: każda Application projektu ma finalizer, obrazy przypięte (bez `latest`), kod po angielsku tam, gdzie się da sprawdzić | tak |
-| Sekrety (repo publiczne!) | gitleaks na drzewie i historii: żadnych maili, tokenów, kluczy w śledzonych plikach | tak |
-| Plan | `tofu plan -detailed-exitcode` na każdej warstwie: „kod zgadza się z żywą infrastrukturą” | nie — osobno, np. `just check live` |
-
-Część offline może iść w CI na GitHubie (repo jest publiczne, więc bez sekretów w CI).
-
-### Struktura plików — czy nie robi się bałagan
-
-Przejrzeć tak, jak przejrzeliśmy frontend `automat-operat` (tam folder „na wszystko” `ui/`
-okazał się dwiema funkcjami). Pytania na start:
-
-- czy podział `scripts/` ↔ `.just/lib/` ↔ `scripts/.internal/` jest jasny, czy trzy miejsca
-  na bash to o dwa za dużo;
-- czy `argocd/manifests/<element>/` + `argocd/apps/platform/<element>.yaml` dla każdego
-  elementu platformy (cloudflared, nas-storage, wkrótce postgres) nie powinny leżeć razem;
-- `kubeconfig` w katalogu głównym repo;
-- czy rzeczy robione ręcznie poza kodem (OMV, kolejność startu VM 113 — `docs/nas.md`)
-  da się opisać kodem, czy wystarczy je jasno wypisać.
-
-Wynik: plan lepszego podziału (jeśli potrzebny) i dopisane zasady w AGENTS.md, tak jak
-sekcja „Web app layout” w `automat-operat/CLAUDE.md`.
+Zostało na później: `kubeconfig` w katalogu głównym repo (poza gitem, działa — rusza się
+dopiero przy kontekstach wielu klastrów); opis OMV kodem — osobny punkt niżej.
 
 ---
 

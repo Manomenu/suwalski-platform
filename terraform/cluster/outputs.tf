@@ -3,13 +3,6 @@ output "vm_ip" {
   value       = var.vm_ip
 }
 
-output "ssh" {
-  description = "How to log in."
-  # Note: `ssh pve` leads to the Proxmox HOST (192.168.0.111), not here —
-  # these are two different machines.
-  value = "ssh ${var.vm_user}@${var.vm_ip}"
-}
-
 output "vm_user" {
   description = "Account created by cloud-init — the kubeconfig script uses it."
   value       = var.vm_user

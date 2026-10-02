@@ -1,0 +1,70 @@
+name: check
+
+# The offline half of `just check` on every push and pull request, so a broken commit is
+# visible before Argo ever reads it. The live half (`just check live`) needs the LAN and
+# the secrets, so it stays a local command.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Tool versions — the same as nixpkgs gives in ~/.dotfiles/fedora/nix/home.nix, so the gate
+  # in CI and on the laptop is one gate. Bump them together.
+  JUST: "1.58.0"
+  TOFU: "1.12.5"
+  TFLINT: "0.64.0"
+  SHELLCHECK: "0.11.0"
+  SHFMT: "3.13.1"
+  YAMLLINT: "1.37.1"
+  KUBECONFORM: "0.8.0"
+  ACTIONLINT: "1.7.12"
+  GITLEAKS: "8.30.1"
+  TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.tofu-plugins
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks scans the whole history: a secret removed later is still published.
+          fetch-depth: 0
+
+      # Providers for `tofu validate`, keyed by the committed lockfiles.
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: tofu-${{ hashFiles('terraform/*/.terraform.lock.hcl') }}
+
+      - name: Install the tools, pinned
+        run: |
+          set -euo pipefail
+          bin="$HOME/.local/bin"
+          mkdir -p "$bin" "$TF_PLUGIN_CACHE_DIR"
+          echo "$bin" >> "$GITHUB_PATH"
+          # get OWNER/REPO TAG FILE — a release asset from GitHub
+          get() { curl -fsSL "https://github.com/$1/releases/download/$2/$3"; }
+
+          get casey/just "$JUST" "just-$JUST-x86_64-unknown-linux-musl.tar.gz" | tar -xz -C "$bin" just
+          get opentofu/opentofu "v$TOFU" "tofu_${TOFU}_linux_amd64.tar.gz" | tar -xz -C "$bin" tofu
+          get terraform-linters/tflint "v$TFLINT" tflint_linux_amd64.zip | funzip >"$bin/tflint"
+          get koalaman/shellcheck "v$SHELLCHECK" "shellcheck-v$SHELLCHECK.linux.x86_64.tar.xz" |
+            tar -xJ --strip-components=1 -C "$bin" "shellcheck-v$SHELLCHECK/shellcheck"
+          get mvdan/sh "v$SHFMT" "shfmt_v${SHFMT}_linux_amd64" >"$bin/shfmt"
+          get yannh/kubeconform "v$KUBECONFORM" kubeconform-linux-amd64.tar.gz | tar -xz -C "$bin" kubeconform
+          get rhysd/actionlint "v$ACTIONLINT" "actionlint_${ACTIONLINT}_linux_amd64.tar.gz" |
+            tar -xz -C "$bin" actionlint
+          get gitleaks/gitleaks "v$GITLEAKS" "gitleaks_${GITLEAKS}_linux_x64.tar.gz" | tar -xz -C "$bin" gitleaks
+          chmod +x "$bin"/*
+          pipx install --quiet "yamllint==$YAMLLINT"
+
+      # Deliberately the same command as on the laptop.
+      - run: just check

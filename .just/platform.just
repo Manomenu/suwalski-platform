@@ -8,19 +8,14 @@ lib := justfile_directory() / ".just/lib"
 
 [private]
 default:
-    @just --justfile {{justfile()}} --list platform --unsorted --list-heading $'Commands — `just platform <command>`:\n'
+    @just --justfile {{ justfile() }} --list platform --unsorted --list-heading $'Commands — `just platform <command>`:\n'
 
-[group('tofu')]
-[doc('fmt + validate. Local, without touching the cluster')]
-validate:
-    @{{lib}}/tofu.sh validate platform
-
-[group('tofu')]
 [doc('Show what would change in the cluster. Changes nothing')]
-plan *args:
-    @{{lib}}/tofu.sh plan platform "$@"
-
 [group('tofu')]
+plan *args:
+    @{{ lib }}/tofu.sh plan platform "$@"
+
 [doc('Apply. Arguments go to tofu, e.g. -auto-approve')]
+[group('tofu')]
 apply *args:
-    @{{lib}}/tofu.sh apply platform "$@"
+    @{{ lib }}/tofu.sh apply platform "$@"

@@ -8,26 +8,21 @@ lib := justfile_directory() / ".just/lib"
 
 [private]
 default:
-    @just --justfile {{justfile()}} --list edge --unsorted --list-heading $'Commands — `just edge <command>`:\n'
+    @just --justfile {{ justfile() }} --list edge --unsorted --list-heading $'Commands — `just edge <command>`:\n'
 
-[group('tofu')]
-[doc('fmt + validate. Local, without touching Cloudflare')]
-validate:
-    @{{lib}}/tofu.sh validate edge
-
-[group('tofu')]
 [doc('Show what would change in Cloudflare. Changes nothing')]
-plan *args:
-    @{{lib}}/tofu.sh plan edge "$@"
-
 [group('tofu')]
-[doc('Apply. Arguments go to tofu, e.g. -auto-approve')]
-apply *args:
-    @{{lib}}/tofu.sh apply edge "$@"
+plan *args:
+    @{{ lib }}/tofu.sh plan edge "$@"
 
-[group('status')]
+[doc('Apply. Arguments go to tofu, e.g. -auto-approve')]
+[group('tofu')]
+apply *args:
+    @{{ lib }}/tofu.sh apply edge "$@"
+
 [doc('Is cloudflared in the cluster holding the tunnel: pods and the last log lines')]
+[group('status')]
 tunnel:
-    @kubectl --kubeconfig {{justfile_directory()}}/kubeconfig -n cloudflared get pods -o wide
+    @kubectl --kubeconfig {{ justfile_directory() }}/kubeconfig -n cloudflared get pods -o wide
     @echo
-    @kubectl --kubeconfig {{justfile_directory()}}/kubeconfig -n cloudflared logs deploy/cloudflared --tail=10 2>&1 || true
+    @kubectl --kubeconfig {{ justfile_directory() }}/kubeconfig -n cloudflared logs deploy/cloudflared --tail=10 2>&1 || true

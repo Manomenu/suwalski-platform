@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared functions for the setup.sh scripts — platform and projects. Sourced, not executed:
 #
 #   source "$ROOT/scripts/.internal/lib.sh"
@@ -11,26 +12,6 @@
 SECRETS_DIR="$ROOT/.secrets"
 declare -gA CURRENT=()
 
-# ── migration from the old layout ─────────────────────────────────────────────
-# Until recently everything lived in a single .secrets.env. We split it once, on the first
-# run of any script: the investing-tools project values go to its file, the rest to
-# platform.env. After the migration the old file is gone, so this never runs again.
-migrate_old_env() {
-    local old="$ROOT/.secrets.env"
-    [ -f "$old" ] || return 0
-    mkdir -p "$SECRETS_DIR" && chmod 700 "$SECRETS_DIR"
-    (
-        umask 077
-        grep -v '^SEC_USER_AGENT=' "$old" > "$SECRETS_DIR/platform.env"
-        {
-            echo "# Moved from .secrets.env by scripts/.internal/lib.sh."
-            grep '^SEC_USER_AGENT=' "$old" || true
-        } > "$SECRETS_DIR/suwalski-investing-tools.env"
-    )
-    rm -f "$old"
-    echo "  migration: .secrets.env split into .secrets/platform.env and .secrets/suwalski-investing-tools.env"
-}
-
 # ── secrets source ────────────────────────────────────────────────────────────
 
 # load_source NAME — .secrets/NAME.env into the CURRENT array
@@ -41,8 +22,9 @@ load_source() {
     local k v
     while IFS='=' read -r k v; do
         [[ "$k" =~ ^[A-Z_]+$ ]] || continue
-        v="${v%\"}"; CURRENT["$k"]="${v#\"}"
-    done < "$SOURCE"
+        v="${v%\"}"
+        CURRENT["$k"]="${v#\"}"
+    done <"$SOURCE"
 }
 
 # save_source KEY… — from the CURRENT array to the file loaded by load_source
@@ -55,14 +37,17 @@ save_source() {
             echo "# are entered by hand. Edit by running the script again."
             local k
             for k in "$@"; do printf '%s="%s"\n' "$k" "${CURRENT[$k]}"; done
-        } > "$SOURCE"
+        } >"$SOURCE"
     )
     echo "  saved: ${SOURCE#"$ROOT"/} (600)"
 }
 
 mask() {
     local v="$1"
-    [ ${#v} -le 8 ] && { printf '********'; return; }
+    [ ${#v} -le 8 ] && {
+        printf '********'
+        return
+    }
     printf '%s…%s' "${v:0:4}" "${v: -4}"
 }
 
@@ -80,12 +65,16 @@ ask() {
         echo "  required — not provided yet"
     fi
     if [ -n "$silent" ]; then
-        read -rsp "  > " new; echo
+        read -rsp "  > " new
+        echo
     else
         read -rp "  > " new
     fi
     if [ -z "$new" ]; then
-        [ -n "$old" ] || { echo "  this value is required" >&2; return 1; }
+        [ -n "$old" ] || {
+            echo "  this value is required" >&2
+            return 1
+        }
         new="$old"
     fi
     CURRENT["$name"]="$new"
@@ -103,7 +92,7 @@ write_group() {
         [ -n "$e" ] && json+="${json:+, }\"$e\""
     done
     mkdir -p "$(dirname "$file")"
-    (umask 077 && printf '[%s]\n' "$json" > "$file")
+    (umask 077 && printf '[%s]\n' "$json" >"$file")
     echo "  saved: ${file#"$ROOT"/}  (group \"$name\")"
 }
 
@@ -115,11 +104,14 @@ write_group() {
 cluster_available() {
     export KUBECONFIG="$ROOT/kubeconfig"
     if ! command -v kubectl >/dev/null; then
-        echo "  skipped: kubectl not found"; return 1
+        echo "  skipped: kubectl not found"
+        return 1
     elif [ ! -f "$KUBECONFIG" ]; then
-        echo "  skipped: no kubeconfig (just cluster kubeconfig)"; return 1
+        echo "  skipped: no kubeconfig (just cluster kubeconfig)"
+        return 1
     elif ! kubectl cluster-info >/dev/null 2>&1; then
-        echo "  skipped: cluster unreachable (not created yet? first: just cluster apply)"; return 1
+        echo "  skipped: cluster unreachable (not created yet? first: just cluster apply)"
+        return 1
     fi
 }
 
@@ -128,7 +120,8 @@ cluster_available() {
 # object already exists. Argo also creates project namespaces (CreateNamespace), but the
 # Secret needs somewhere to live before the first sync.
 secret() {
-    local ns="$1" name="$2"; shift 2
+    local ns="$1" name="$2"
+    shift 2
     local args=() kv
     for kv in "$@"; do args+=(--from-literal="$kv"); done
     kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
@@ -157,8 +150,8 @@ argo_repo_secret() {
     local name="$1" url="$2" key_file="$3"
     kubectl create secret generic "$name" --namespace argocd \
         --from-literal=type=git --from-literal=url="$url" --from-file=sshPrivateKey="$key_file" \
-        --dry-run=client -o yaml \
-        | kubectl label --local -f - argocd.argoproj.io/secret-type=repository -o yaml \
-        | kubectl apply -f - >/dev/null
+        --dry-run=client -o yaml |
+        kubectl label --local -f - argocd.argoproj.io/secret-type=repository -o yaml |
+        kubectl apply -f - >/dev/null
     echo "  Secret $name in namespace argocd (repo $url): up to date"
 }

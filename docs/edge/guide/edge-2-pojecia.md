@@ -86,7 +86,7 @@ trzeba wpisywać.
 
 Po zalogowaniu każde żądanie, które Cloudflare wpuszcza do tunelu, niesie **podpisany
 token Access** (JWT) w nagłówku `Cf-Access-Jwt-Assertion`. Mówi on: „ten człowiek to
-`ciocia@gmail.com`, zalogowany do aplikacji X, ważne do…”, i jest podpisany kluczem
+`ciocia@example.com`, zalogowany do aplikacji X, ważne do…”, i jest podpisany kluczem
 Cloudflare.
 
 **aud (audience tag)** — identyfikator konkretnej aplikacji Access, wpisany w token.

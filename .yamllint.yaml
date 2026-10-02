@@ -1,0 +1,19 @@
+# yamllint for argocd/ and .github/ (`just check`). The default rules, loosened only where
+# they fight how Kubernetes manifests are usually written.
+extends: default
+
+rules:
+  # Single-document files need no "---" on top; multi-document ones use it as a separator.
+  document-start: disable
+  # Comments here explain decisions and run long; 120 matches the other files in the repo.
+  line-length:
+    max: 120
+  # `{ path: /health, port: health }` — flow mappings with a space inside are common in manifests.
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  comments:
+    min-spaces-from-content: 1
+  # GitHub Actions' `on:` is a key, not a boolean.
+  truthy:
+    check-keys: false

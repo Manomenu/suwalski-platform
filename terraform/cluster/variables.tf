@@ -131,7 +131,7 @@ variable "vm_cores" {
 }
 
 variable "vm_memory_mb" {
-  description = "Memory in MB. Phase 7 (Prometheus and Grafana) only fits from ~6 GB."
+  description = "Memory in MB. Monitoring (Prometheus and Grafana) only fits from ~6 GB."
   type        = number
   default     = 6144
 
