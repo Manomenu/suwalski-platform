@@ -28,7 +28,7 @@ spec:
       parameters:
         # ↓ THIS ONE LINE IS THE DEPLOYMENT.
         - name: image.tag
-          value: sha-88e292e
+          value: sha-d5c4f16
         # docker-registry Secret from setup.sh — images of a private repo are private.
         - name: image.pullSecret
           value: ghcr-pull
