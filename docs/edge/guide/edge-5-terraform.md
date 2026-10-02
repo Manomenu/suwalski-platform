@@ -314,6 +314,6 @@ te trzy rzeczy są na trzech różnych ekranach i łatwo zapomnieć o jednej.
 - `tunnel_id` — do porównania z panelem i rekordami DNS.
 - `tunnel_token` — `sensitive`; `tofu output` go nie pokaże, `tofu output -raw tunnel_token`
   pokaże (tak czyta go `setup.sh`).
-- `urls` — lista adresów; wypisuje ją `just edge apply` w sekcji „Dalej”.
+- `urls` — lista adresów; wypisuje ją `just edge apply` w sekcji „Next”.
 
 [następny: cloudflared w klastrze →](edge-6-cloudflared.md)

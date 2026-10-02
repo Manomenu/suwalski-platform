@@ -1,10 +1,10 @@
-# Obraz systemu. Pobiera go sam Proxmox, więc nie ma kroku „ściągnij ręcznie i wgraj".
+# OS image. Proxmox downloads it itself, so there is no "download by hand and upload" step.
 #
-# content_type = "import", nie "iso". Proxmox 9 rozdziela te dwie rzeczy: „iso" to nośnik
-# do włożenia do napędu, „import" to dysk do zaimportowania. Próba użycia obrazu z „iso"
-# jako dysku kończy się odmową: „has wrong type 'iso' - needs to be 'images' or 'import'".
-# Dzięki temu plik może zostać przy prawdziwym rozszerzeniu .qcow2 — storage typu iso
-# przyjmował tylko .img/.iso i trzeba go było oszukiwać.
+# content_type = "import", not "iso". Proxmox 9 separates the two: "iso" is media to put
+# in a drive, "import" is a disk to import. Trying to use an image from "iso" as a disk
+# is refused: "has wrong type 'iso' - needs to be 'images' or 'import'".
+# Thanks to that the file can keep its real .qcow2 extension — iso-type storage only
+# accepted .img/.iso and had to be tricked.
 resource "proxmox_download_file" "debian" {
   content_type = "import"
   datastore_id = var.file_datastore
@@ -12,12 +12,12 @@ resource "proxmox_download_file" "debian" {
   url          = var.debian_image_url
   file_name    = "debian-13-genericcloud-amd64.qcow2"
 
-  # Obraz „latest" pod tym adresem podmienia się co kilka tygodni. Bez tego Terraform
-  # przy każdym uruchomieniu widziałby inny plik i chciał odtwarzać maszynę.
+  # The "latest" image at this URL is replaced every few weeks. Without this Terraform
+  # would see a different file on every run and want to recreate the machine.
   overwrite = false
 }
 
-# Konfiguracja pierwszego startu, wgrywana na Proxmoksa jako snippet.
+# First-boot configuration, uploaded to Proxmox as a snippet.
 resource "proxmox_virtual_environment_file" "user_data" {
   content_type = "snippets"
   datastore_id = var.file_datastore
@@ -28,8 +28,8 @@ resource "proxmox_virtual_environment_file" "user_data" {
     data = templatefile("${path.module}/templates/user-data.yaml.tftpl", {
       hostname = var.vm_name
       username = var.vm_user
-      # jsonencode daje listę w zapisie ['a','b'] — JSON jest poprawnym YAML-em,
-      # więc szablon nie potrzebuje pętli i sam pozostaje poprawnym YAML-em.
+      # jsonencode produces a list written as ['a','b'] — JSON is valid YAML,
+      # so the template needs no loop and stays valid YAML itself.
       ssh_keys    = jsonencode(var.ssh_public_keys)
       node_ip     = var.vm_ip
       k3s_version = var.k3s_version
@@ -45,18 +45,18 @@ resource "proxmox_virtual_environment_vm" "k3s" {
   description = "Węzeł k3s. Zarządzany Terraformem — zmiany klikane w interfejsie zostaną nadpisane."
   tags        = ["terraform", "k3s"]
 
-  # Bez tego maszyna nie wstaje po restarcie hosta.
+  # Without this the machine does not come back after a host restart.
   on_boot = true
 
   agent {
-    # Terraform czeka dzięki temu na realny adres IP zamiast zgadywać, że maszyna wstała.
+    # Thanks to this Terraform waits for a real IP address instead of guessing the machine is up.
     enabled = true
   }
 
   cpu {
     cores = var.vm_cores
-    # „host" przekazuje maszynie zestaw instrukcji prawdziwego procesora zamiast
-    # emulowanego minimum. Bezpieczne, bo maszyna nigdzie się nie migruje.
+    # "host" passes the real CPU's instruction set to the machine instead of an
+    # emulated minimum. Safe, because the machine never migrates anywhere.
     type = "host"
   }
 
@@ -98,7 +98,7 @@ resource "proxmox_virtual_environment_vm" "k3s" {
     user_data_file_id = proxmox_virtual_environment_file.user_data.id
   }
 
-  # Konsola szeregowa — obraz chmurowy Debiana wypisuje na nią logi startu, więc bez
-  # niej podgląd w Proxmoksie zostaje czarny.
+  # Serial console — the Debian cloud image writes its boot logs there, so without
+  # it the Proxmox console stays black.
   serial_device {}
 }

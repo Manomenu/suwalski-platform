@@ -1,109 +1,109 @@
 #!/usr/bin/env bash
-# Przygotowanie PLATFORMY na świeżo sklonowanym repo. Idempotentne — uruchamiaj ile chcesz.
+# PLATFORM setup on a freshly cloned repo. Idempotent — run it as often as you like.
 #
-# Kroki: narzędzia (just) → sekrety platformy → ich rozprowadzenie.
+# Steps: tools (just) → platform secrets → distributing them.
 #
-# Tylko to, co wspólne dla całego klastra. Sekrety projektów (maile osób z dostępem, hasła
-# aplikacji) mają własne skrypty w scripts/projects/<projekt>/[<środowisko>/]setup.sh —
-# ten skrypt ich nie dotyka.
+# Only what is shared by the whole cluster. Project secrets (emails of people with access,
+# application passwords) have their own scripts in scripts/projects/<project>/[<env>/]setup.sh —
+# this script does not touch them.
 #
 #   .secrets/platform.env ──┬──>  terraform/cluster/secrets.auto.tfvars   (Proxmox, SSH)
-#                           ├──>  terraform/edge/secrets.auto.tfvars      (token Cloudflare)
-#                           ├──>  terraform/edge/access/admin.json        (grupa „admin”: Ty)
-#                           └──>  Secret cloudflared-token w klastrze*
+#                           ├──>  terraform/edge/secrets.auto.tfvars      (Cloudflare token)
+#                           ├──>  terraform/edge/access/admin.json        (group "admin": you)
+#                           └──>  Secret cloudflared-token in the cluster*
 #
-#   * token tunelu nie pochodzi z .secrets/, tylko z wyjścia terraform/edge — powstaje
-#     przy `just edge apply`. Dlatego po pierwszym apply edge uruchom ten skrypt jeszcze raz.
+#   * the tunnel token does not come from .secrets/ but from the terraform/edge output — it is
+#     created by `just edge apply`. That is why you run this script again after the first edge apply.
 #
-# ⚠ Przejściowe. Docelowo sekrety mają leżeć w gicie zaszyfrowane — patrz TODO.md.
+# ⚠ Temporary. Eventually the secrets should live in git, encrypted — see TODO.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/.internal/lib.sh"
 
-# ── narzędzia ─────────────────────────────────────────────────────────────────
-# Najpierw, bo wszystko po setupie idzie przez `just`. Brak just nie blokuje sekretów —
-# rozprowadzamy je i tak, a ostrzeżenie zostaje na ekranie.
-echo "== Narzędzia =="
+# ── tools ─────────────────────────────────────────────────────────────────────
+# First, because everything after setup goes through `just`. Missing just does not block
+# the secrets — we distribute them anyway, and the warning stays on screen.
+echo "== Tools =="
 "$ROOT/scripts/.internal/install-just.sh" \
-    || echo "  uwaga: bez just nie zadziała żadne \`just ...\` — sekrety rozprowadzam i tak" >&2
+    || echo "  warning: without just no \`just ...\` will work — distributing the secrets anyway" >&2
 
-# ── sekrety platformy ─────────────────────────────────────────────────────────
+# ── platform secrets ──────────────────────────────────────────────────────────
 echo
-echo "== Sekrety platformy =="
-migruj_stary_env
-wczytaj_zrodlo platform
-echo "  źródło: ${ZRODLO#"$ROOT"/}"
+echo "== Platform secrets =="
+migrate_old_env
+load_source platform
+echo "  source: ${SOURCE#"$ROOT"/}"
 
-zapytaj PROXMOX_API_TOKEN \
-    "Token API Proxmoksa (root@pam!nazwa=UUID). Tworzy go: ssh pve 'pveum user token add root@pam terraform --privsep 0'" \
-    "" cicho
+ask PROXMOX_API_TOKEN \
+    "Proxmox API token (root@pam!name=UUID). Create it with: ssh pve 'pveum user token add root@pam terraform --privsep 0'" \
+    "" silent
 
-_klucz=""
-[ -f "$HOME/.ssh/id_ed25519.pub" ] && _klucz="$(cat "$HOME/.ssh/id_ed25519.pub")"
-zapytaj SSH_PUBLIC_KEY \
-    "Klucz publiczny wpuszczany na maszynę z k3s" \
-    "$_klucz"
+_key=""
+[ -f "$HOME/.ssh/id_ed25519.pub" ] && _key="$(cat "$HOME/.ssh/id_ed25519.pub")"
+ask SSH_PUBLIC_KEY \
+    "Public key allowed onto the k3s machine" \
+    "$_key"
 
-zapytaj CLOUDFLARE_API_TOKEN \
-    "Token API Cloudflare dla terraform/edge. Uprawnienia: docs/edge/guide/edge-4-sekrety.md" \
-    "" cicho
+ask CLOUDFLARE_API_TOKEN \
+    "Cloudflare API token for terraform/edge. Permissions: docs/edge/guide/edge-4-sekrety.md" \
+    "" silent
 
-zapytaj ACCESS_ADMIN \
-    "Twój mail — grupa 'admin' w Cloudflare Access (to, co tylko dla Ciebie, np. środowiska dev)" \
+ask ACCESS_ADMIN \
+    "Your email — the 'admin' group in Cloudflare Access (things only for you, e.g. dev environments)" \
     ""
 
 echo
-zapisz_zrodlo PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN
+save_source PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN
 
-# ── rozprowadzenie: terraform/cluster ─────────────────────────────────────────
+# ── distribution: terraform/cluster ───────────────────────────────────────────
 echo
 echo "== terraform/cluster =="
 TFV="$ROOT/terraform/cluster/secrets.auto.tfvars"
 (
     umask 077
     {
-        echo "# GENEROWANE przez scripts/setup.sh — nie edytuj ręcznie."
-        echo "# Źródłem jest .secrets/platform.env."
+        echo "# GENERATED by scripts/setup.sh — do not edit by hand."
+        echo "# The source is .secrets/platform.env."
         echo
-        printf 'proxmox_api_token = "%s"\n\n' "${OBECNE[PROXMOX_API_TOKEN]}"
-        printf 'ssh_public_keys = [\n  "%s",\n]\n' "${OBECNE[SSH_PUBLIC_KEY]}"
+        printf 'proxmox_api_token = "%s"\n\n' "${CURRENT[PROXMOX_API_TOKEN]}"
+        printf 'ssh_public_keys = [\n  "%s",\n]\n' "${CURRENT[SSH_PUBLIC_KEY]}"
     } > "$TFV"
 )
-echo "  zapisane: ${TFV#"$ROOT"/}"
+echo "  saved: ${TFV#"$ROOT"/}"
 
-# ── rozprowadzenie: terraform/edge ────────────────────────────────────────────
+# ── distribution: terraform/edge ──────────────────────────────────────────────
 echo
 echo "== terraform/edge =="
 TFV="$ROOT/terraform/edge/secrets.auto.tfvars"
 (
     umask 077
     {
-        echo "# GENEROWANE przez scripts/setup.sh — nie edytuj ręcznie."
-        echo "# Źródłem jest .secrets/platform.env. Grupy dostępu są w access/*.json."
+        echo "# GENERATED by scripts/setup.sh — do not edit by hand."
+        echo "# The source is .secrets/platform.env. Access groups are in access/*.json."
         echo
-        printf 'cloudflare_api_token = "%s"\n' "${OBECNE[CLOUDFLARE_API_TOKEN]}"
+        printf 'cloudflare_api_token = "%s"\n' "${CURRENT[CLOUDFLARE_API_TOKEN]}"
     } > "$TFV"
 )
-echo "  zapisane: ${TFV#"$ROOT"/}"
-zapisz_grupe admin "${OBECNE[ACCESS_ADMIN]}"
+echo "  saved: ${TFV#"$ROOT"/}"
+write_group admin "${CURRENT[ACCESS_ADMIN]}"
 
-# ── rozprowadzenie: klaster ───────────────────────────────────────────────────
+# ── distribution: cluster ─────────────────────────────────────────────────────
 echo
-echo "== klaster =="
-if klaster_dostepny; then
-    # Token tunelu: z wyjścia terraform/edge, nie z .secrets/ — powstaje przy apply edge.
-    # Sprawdzamy przez -json: przy pustym stanie `output -raw` wypisuje ostrzeżenie na
-    # stdout i kończy zerem, więc do Secretu trafiłby tekst ostrzeżenia.
+echo "== cluster =="
+if cluster_available; then
+    # Tunnel token: from the terraform/edge output, not from .secrets/ — created by edge apply.
+    # We check via -json: with an empty state `output -raw` prints a warning to stdout
+    # and exits zero, so the warning text would end up in the Secret.
     EDGE="$ROOT/terraform/edge"
     if [ -d "$EDGE/.terraform" ] && (cd "$EDGE" && tofu output -json tunnel_token >/dev/null 2>&1); then
         secret cloudflared cloudflared-token "token=$(cd "$EDGE" && tofu output -raw tunnel_token)"
     else
-        echo "  pominięte: token tunelu (tunelu jeszcze nie ma — najpierw: just edge apply)"
+        echo "  skipped: tunnel token (no tunnel yet — first: just edge apply)"
     fi
 fi
 
 echo
-echo "== Dalej =="
-echo "  projekty:  scripts/projects/<projekt>/[<środowisko>/]setup.sh — każdy swoje sekrety"
-echo "  init:      (cd terraform/<cluster|platform|edge> && tofu init)   # jeśli jeszcze nie było"
-echo "  potem:     just"
+echo "== Next =="
+echo "  projects:  scripts/projects/<project>/[<env>/]setup.sh — each with its own secrets"
+echo "  init:      (cd terraform/<cluster|platform|edge> && tofu init)   # if not done yet"
+echo "  then:      just"

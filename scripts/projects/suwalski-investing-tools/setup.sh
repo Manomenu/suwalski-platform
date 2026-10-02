@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# Sekrety projektu suwalski-investing-tools. Idempotentne.
+# suwalski-investing-tools project secrets. Idempotent.
 #
 #   .secrets/suwalski-investing-tools.env ──>  Secret suwalski-sec (namespace suw-inv-tools)
 #
-# Projekt ma jedno środowisko, więc skrypt leży bezpośrednio w katalogu projektu. Gdy dojdą
-# dev/prod, rozdziel go jak scripts/projects/automat-operat/.
+# The project has a single environment, so the script sits directly in the project directory.
+# When dev/prod arrive, split it like scripts/projects/automat-operat/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 source "$ROOT/scripts/.internal/lib.sh"
 
-echo "== suwalski-investing-tools: sekrety =="
-migruj_stary_env
-wczytaj_zrodlo suwalski-investing-tools
-echo "  źródło: ${ZRODLO#"$ROOT"/}"
+echo "== suwalski-investing-tools: secrets =="
+migrate_old_env
+load_source suwalski-investing-tools
+echo "  source: ${SOURCE#"$ROOT"/}"
 
-zapytaj SEC_USER_AGENT \
-    "Identyfikacja dla SEC EDGAR — 'Imię Nazwisko adres@email'. Bez tego SEC odrzuca żądania." \
+ask SEC_USER_AGENT \
+    "Identification for SEC EDGAR — 'First Last address@email'. Without it SEC rejects requests." \
     ""
 
 echo
-zapisz_zrodlo SEC_USER_AGENT
+save_source SEC_USER_AGENT
 
 echo
-echo "== klaster =="
-if klaster_dostepny; then
-    secret suw-inv-tools suwalski-sec "SEC_USER_AGENT=${OBECNE[SEC_USER_AGENT]}"
+echo "== cluster =="
+if cluster_available; then
+    secret suw-inv-tools suwalski-sec "SEC_USER_AGENT=${CURRENT[SEC_USER_AGENT]}"
 fi

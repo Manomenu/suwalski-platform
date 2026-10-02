@@ -1,6 +1,6 @@
-# Fakty o tej instalacji. Bez sekretów, więc w gicie — tak samo jak proxmox.auto.tfvars.
+# Facts about this installation. No secrets, so it is in git — just like proxmox.auto.tfvars.
 #
-# Nazwa musi mieścić się we wpisie wieloznacznym w DNS:
+# The name must be covered by the wildcard DNS entry:
 #   *.k8s.suwalski.internal  ->  192.168.0.119
 
 argocd_host = "argocd.k8s.suwalski.internal"

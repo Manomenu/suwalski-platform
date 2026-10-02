@@ -1,14 +1,14 @@
 output "argocd_url" {
-  description = "Adres interfejsu. Działa, gdy w DNS jest wpis wieloznaczny na adres węzła."
+  description = "UI address. Works when DNS has a wildcard entry pointing at the node address."
   value       = "http://${var.argocd_host}"
 }
 
 output "argocd_namespace" {
-  description = "Przestrzeń nazw — przyda się do kubectl i k9s."
+  description = "Namespace — useful for kubectl and k9s."
   value       = var.argocd_namespace
 }
 
 output "haslo" {
-  description = "Jak odczytać hasło początkowe użytkownika admin."
+  description = "How to read the initial password of the admin user."
   value       = "just argo password"
 }

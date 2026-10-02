@@ -2,12 +2,12 @@ terraform {
   required_version = ">= 1.9"
 
   required_providers {
-    # Instaluje Argo CD z gotowego charta Helma — tego samego, którego użyłbyś ręcznie.
+    # Installs Argo CD from the ready-made Helm chart — the same one you would use by hand.
     helm = {
       source  = "hashicorp/helm"
       version = "~> 3.0"
     }
-    # Do rzeczy, których chart nie obejmuje: przestrzeń nazw i Ingress.
+    # For things the chart does not cover: the namespace and the Ingress.
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.35"

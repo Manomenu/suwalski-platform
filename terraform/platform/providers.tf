@@ -1,8 +1,8 @@
-# Ta konfiguracja jest osobna od terraform/cluster/ z jednego konkretnego powodu:
-# provider nie może być skonfigurowany plikiem, który powstaje w tym samym przebiegu.
-# Maszyna i kubeconfig muszą już istnieć, zanim cokolwiek tutaj ruszy.
+# This configuration is separate from terraform/cluster/ for one specific reason:
+# a provider cannot be configured with a file that is created in the same run.
+# The machine and the kubeconfig must already exist before anything here starts.
 #
-# Kolejność: just cluster apply -> just cluster kubeconfig -> just platform apply
+# Order: just cluster apply -> just cluster kubeconfig -> just platform apply
 
 locals {
   kubeconfig = abspath("${path.module}/../../kubeconfig")

@@ -1,154 +1,154 @@
-# Podział wartości na trzy warstwy:
+# Values are split into three layers:
 #
-#   default tutaj        — decyzje projektowe: takie same w każdym środowisku
-#   proxmox.auto.tfvars  — fakty o tej instalacji: adresy, nazwy, storage (w gicie)
-#   secrets.auto.tfvars  — token i klucze (poza gitem)
+#   default here         — design decisions: the same in every environment
+#   proxmox.auto.tfvars  — facts about this installation: addresses, names, storage (in git)
+#   secrets.auto.tfvars  — token and keys (outside git)
 #
-# Zmienna bez `default` jest obowiązkowa: Terraform nie ruszy, póki jej nie podasz.
-# Tak są oznaczone wszystkie rzeczy zależne od środowiska — dzięki temu skopiowanie
-# tego repo na inny Proxmox kończy się czytelnym błędem, a nie cichą próbą postawienia
-# maszyny na nieistniejącym węźle.
+# A variable without `default` is mandatory: Terraform will not start until you provide it.
+# Everything environment-specific is marked this way — so copying this repo to another
+# Proxmox ends in a readable error rather than a silent attempt to create the machine
+# on a node that does not exist.
 
-# ── Dostęp do Proxmoksa ───────────────────────────────────────────────────────
+# ── Proxmox access ────────────────────────────────────────────────────────────
 
 variable "proxmox_endpoint" {
-  description = "Adres API Proxmoksa. → proxmox.auto.tfvars"
+  description = "Proxmox API address. → proxmox.auto.tfvars"
   type        = string
 }
 
 variable "proxmox_api_token" {
-  description = "Token API w formacie USER@REALM!NAZWA=UUID. → secrets.auto.tfvars"
+  description = "API token in the format USER@REALM!NAME=UUID. → secrets.auto.tfvars"
   type        = string
   sensitive   = true
 }
 
 variable "proxmox_insecure" {
-  description = "Nie weryfikuj certyfikatu Proxmoksa — jest samopodpisany. → proxmox.auto.tfvars"
+  description = "Do not verify the Proxmox certificate — it is self-signed. → proxmox.auto.tfvars"
   type        = bool
 }
 
 variable "node_name" {
-  description = "Nazwa węzła Proxmoksa, na którym stanie maszyna. → proxmox.auto.tfvars"
+  description = "Name of the Proxmox node the machine runs on. → proxmox.auto.tfvars"
   type        = string
 }
 
-# ── Maszyna: co zależy od środowiska ──────────────────────────────────────────
+# ── Machine: what depends on the environment ─────────────────────────────────
 
 variable "vm_id" {
-  description = "ID maszyny w Proxmoksie. Musi być wolne. → proxmox.auto.tfvars"
+  description = "Machine ID in Proxmox. Must be free. → proxmox.auto.tfvars"
   type        = number
 
   validation {
-    # Proxmox rezerwuje numery poniżej 100 na potrzeby wewnętrzne.
+    # Proxmox reserves IDs below 100 for internal use.
     condition     = var.vm_id >= 100 && var.vm_id <= 999999999
-    error_message = "vm_id musi być >= 100 — niższe numery są zarezerwowane przez Proxmoksa."
+    error_message = "vm_id must be >= 100 — lower IDs are reserved by Proxmox."
   }
 }
 
 variable "vm_datastore" {
-  description = "Storage na dysk maszyny. → proxmox.auto.tfvars"
+  description = "Storage for the machine disk. → proxmox.auto.tfvars"
   type        = string
 }
 
 variable "file_datastore" {
-  description = "Storage na obraz systemu i plik cloud-init. Musi mieć włączone 'iso' i 'snippets'. → proxmox.auto.tfvars"
+  description = "Storage for the OS image and the cloud-init file. Must have 'iso' and 'snippets' enabled. → proxmox.auto.tfvars"
   type        = string
 }
 
-# ── Sieć: zależy od środowiska ────────────────────────────────────────────────
+# ── Network: depends on the environment ──────────────────────────────────────
 
 variable "network_bridge" {
-  description = "Mostek sieciowy Proxmoksa. → proxmox.auto.tfvars"
+  description = "Proxmox network bridge. → proxmox.auto.tfvars"
   type        = string
 }
 
 variable "vm_ip" {
-  description = "Statyczny adres maszyny. Stały, bo wskazuje na niego kubeconfig — DHCP mogłoby go zmienić i zerwać dostęp do klastra. → proxmox.auto.tfvars"
+  description = "Static machine address. Fixed, because the kubeconfig points at it — DHCP could change it and cut off access to the cluster. → proxmox.auto.tfvars"
   type        = string
 
   validation {
-    # Łapie literówkę przed dotknięciem Proxmoksa. Nie sprawdza, czy adres jest wolny —
-    # tego z pliku konfiguracyjnego nie da się wiedzieć.
+    # Catches a typo before touching Proxmox. Does not check whether the address is free —
+    # a configuration file cannot know that.
     condition     = can(regex("^(\\d{1,3}\\.){3}\\d{1,3}$", var.vm_ip))
-    error_message = "vm_ip musi być adresem IPv4, na przykład 192.168.0.119."
+    error_message = "vm_ip must be an IPv4 address, for example 192.168.0.119."
   }
 }
 
 variable "vm_cidr_prefix" {
-  description = "Maska podsieci. → proxmox.auto.tfvars"
+  description = "Subnet mask. → proxmox.auto.tfvars"
   type        = number
 
   validation {
     condition     = var.vm_cidr_prefix >= 8 && var.vm_cidr_prefix <= 30
-    error_message = "vm_cidr_prefix musi mieścić się w 8–30."
+    error_message = "vm_cidr_prefix must be within 8–30."
   }
 }
 
 variable "gateway" {
-  description = "Brama domyślna. → proxmox.auto.tfvars"
+  description = "Default gateway. → proxmox.auto.tfvars"
   type        = string
 }
 
 variable "dns_servers" {
-  description = "Serwery DNS dla maszyny. → proxmox.auto.tfvars"
+  description = "DNS servers for the machine. → proxmox.auto.tfvars"
   type        = list(string)
 }
 
 variable "ssh_public_keys" {
-  description = "Klucze publiczne wpuszczane na maszynę. → secrets.auto.tfvars"
+  description = "Public keys allowed onto the machine. → secrets.auto.tfvars"
   type        = list(string)
 
   validation {
     condition     = length(var.ssh_public_keys) > 0
-    error_message = "Podaj przynajmniej jeden klucz — inaczej postawisz maszynę, do której się nie zalogujesz."
+    error_message = "Provide at least one key — otherwise you create a machine you cannot log in to."
   }
 }
 
-# ── Decyzje projektowe: te same wszędzie ──────────────────────────────────────
+# ── Design decisions: the same everywhere ────────────────────────────────────
 
 variable "vm_name" {
-  description = "Nazwa maszyny i hostname w systemie."
+  description = "Machine name and hostname in the OS."
   type        = string
   default     = "k3s-1"
 }
 
 variable "vm_cores" {
-  description = "Rdzenie procesora."
+  description = "CPU cores."
   type        = number
   default     = 2
 }
 
 variable "vm_memory_mb" {
-  description = "Pamięć w MB. Faza 7 (Prometheus i Grafana) zmieści się dopiero od ~6 GB."
+  description = "Memory in MB. Phase 7 (Prometheus and Grafana) only fits from ~6 GB."
   type        = number
   default     = 6144
 
   validation {
     condition     = var.vm_memory_mb >= 2048
-    error_message = "k3s z Argo CD poniżej 2 GB nie wstanie sensownie."
+    error_message = "k3s with Argo CD will not run sensibly below 2 GB."
   }
 }
 
 variable "vm_disk_gb" {
-  description = "Dysk w GB. Mieści system, obrazy kontenerów i wolumeny tworzone lokalnie przez klaster."
+  description = "Disk in GB. Holds the OS, container images and volumes created locally by the cluster."
   type        = number
   default     = 40
 }
 
 variable "debian_image_url" {
-  description = "Obraz chmurowy Debiana. 'genericcloud' to wariant bez sterowników do fizycznego sprzętu — mniejszy, bo maszyna i tak jest wirtualna."
+  description = "Debian cloud image. 'genericcloud' is the variant without drivers for physical hardware — smaller, since the machine is virtual anyway."
   type        = string
   default     = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
 }
 
 variable "vm_user" {
-  description = "Konto zakładane przez cloud-init."
+  description = "Account created by cloud-init."
   type        = string
   default     = "maniumek"
 }
 
 variable "k3s_version" {
-  description = "Przypięta wersja k3s. Ta sama reguła co przy obrazach kontenerów: nigdy 'najnowsza', zawsze konkretna."
+  description = "Pinned k3s version. Same rule as for container images: never 'latest', always a specific one."
   type        = string
   default     = "v1.36.4+k3s1"
 }

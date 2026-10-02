@@ -1,5 +1,5 @@
-# Argo CD w klastrze homelab. Zawsze przez kubeconfig tego repo, nie przez KUBECONFIG
-# z powłoki — ten złożony z wielu klastrów celuje w ten, który akurat jest wybrany.
+# Argo CD in the homelab cluster. Always via this repo's kubeconfig, not KUBECONFIG from
+# the shell — one merged from many clusters targets whichever happens to be selected.
 
 set positional-arguments
 set shell := ["bash", "-euo", "pipefail", "-c"]
@@ -8,19 +8,19 @@ root := justfile_directory()
 
 [private]
 default:
-    @just --justfile {{justfile()}} --list argo --unsorted --list-heading $'Polecenia — `just argo <polecenie>`:\n'
+    @just --justfile {{justfile()}} --list argo --unsorted --list-heading $'Commands — `just argo <command>`:\n'
 
-[doc('Hasło początkowe użytkownika admin')]
+[doc('Initial password of the admin user')]
 password:
     @{{root}}/.just/lib/argocd-password.sh
 
-[doc('Każ Argo sprawdzić gita teraz, zamiast czekać do 3 min. Bez argumentu: wszystkie aplikacje')]
+[doc('Make Argo check git now instead of waiting up to 3 min. No argument: all applications')]
 refresh app="":
     @kubectl --kubeconfig {{root}}/kubeconfig -n argocd annotate applications \
         {{ if app == "" { "--all" } else { app } }} argocd.argoproj.io/refresh=normal --overwrite
-    @echo "  za kilka sekund: just argo apps"
+    @echo "  in a few seconds: just argo apps"
 
-[doc('Aplikacje: czy zgadzają się z gitem (sync) i czy działają (health)')]
+[doc('Applications: do they match git (sync) and do they work (health)')]
 apps:
     @kubectl --kubeconfig {{root}}/kubeconfig -n argocd get applications \
-        -o custom-columns='NAZWA:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,WERSJA:.status.sync.revision'
+        -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'

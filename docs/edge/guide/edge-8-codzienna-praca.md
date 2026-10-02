@@ -80,15 +80,17 @@ Grupa `admin` już istnieje (Twój mail). Wystarczy, że aplikacja jej użyje:
 argocd = { access = "admin" }
 ```
 
-Nowa grupa to jedno wywołanie `zapisz_grupe <nazwa> "<maile>"` w setup.sh, do którego
+Nowa grupa to jedno wywołanie `write_group <nazwa> "<maile>"` w setup.sh, do którego
 należy — tak jak w `scripts/projects/automat-operat/prod/setup.sh`. Powstaje plik
 `terraform/edge/access/<nazwa>.json`, a `access.tf` podchwyci go sam.
 
 ## Nowy projekt albo środowisko
 
-Skopiuj `scripts/projects/automat-operat/dev/setup.sh` do
-`scripts/projects/<projekt>/<środowisko>/setup.sh` i popraw nazwy. Każdy skrypt czyta
-i pisze tylko swój plik w `.secrets/`, więc projekty sobie nie przeszkadzają.
+Skopiuj `scripts/projects/automat-operat/` i popraw nazwy: `setup.sh` w katalogu projektu
+trzyma to, co wspólne dla środowisk (klucz deploy, token rejestru), a
+`<środowisko>/setup.sh` — to, co należy do środowiska (grupa dostępu, Secrety w jego
+namespace). Każdy skrypt pisze tylko swój plik w `.secrets/`, więc projekty i środowiska
+sobie nie przeszkadzają.
 
 ## Zaktualizować cloudflared
 
