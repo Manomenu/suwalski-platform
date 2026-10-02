@@ -34,7 +34,7 @@ docs/               decyzje, które nie mieszczą się w komentarzu
 Codzienne polecenia to `just <moduł> <polecenie>`. Nowe polecenie dopisujesz jako receptę
 w `.just/<moduł>.just` z `[doc]` (i `[group]`, gdy moduł ma ich kilka); dłuższy bash
 trafia do `.just/lib/`, a recepta go woła. Nowa warstwa Terraforma = nowy moduł
-+ `mod` z `[doc]`/`[group('warstwy')]` w głównym `justfile`.
++ `mod` z `[doc]`/`[group('layers')]` w głównym `justfile`.
 
 Do `scripts/` trafia wyłącznie to, czego recepta just zrobić nie może: zmiana bieżącej
 powłoki (musi być `source`) i `setup.sh` — jedyny punkt wejścia na świeżej maszynie.
@@ -128,5 +128,10 @@ zaczniesz cokolwiek kopiować, bo wybór podejścia decyduje o tym, czy wydziela
   i dalej działające (tak zostało `witkowska-dev` po zmianie nazwy). Z finalizerem
   usunięcie lub przemianowanie pliku sprząta całe wdrożenie. Wyjątek: zasoby z adnotacją
   `argocd.argoproj.io/sync-options: Delete=false` (np. PVC z danymi) przeżywają celowo.
+- **Kod po angielsku, dokumentacja po polsku.** Identyfikatory, komentarze i komunikaty
+  w skryptach, receptach just i konfiguracji (`.tf`, `.tfvars`, `.yaml`) piszemy po
+  angielsku; dokumentacja w Markdownie — po polsku. Nie tłumaczymy wartości, które trafiają
+  do infrastruktury (nazwy reguł Access, opisy zasobów, szablon cloud-init): ich zmiana to
+  zmiana zasobu.
 - **Przed `apply` zawsze `plan`.** Cokolwiek w kolumnie „destroy", czego się nie
   spodziewałeś, jest powodem, żeby się zatrzymać.

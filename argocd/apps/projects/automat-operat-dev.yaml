@@ -1,38 +1,39 @@
-# automat-operat / dev — automat-operat (automatyzacja operatów szacunkowych) dla cioci.
+# automat-operat / dev — automat-operat (automating property valuation reports) for auntie.
 #
-# Droga z internetu: automat-operat-dev.gugnowski.com → Cloudflare Access (grupa „automat-operat-dev”)
-# → tunel → cloudflared → Traefik → Ingress w TEJ przestrzeni nazw → nginx (web) → /api → server.
+# Path from the internet: automat-operat-dev.gugnowski.com → Cloudflare Access (group "automat-operat-dev")
+# → tunnel → cloudflared → Traefik → Ingress in THIS namespace → nginx (web) → /api → server.
 #
-# Repo z kodem jest prywatne. Argo czyta je kluczem deploy, a k3s pobiera obrazy z GHCR
-# tokenem — oba Secrety zakłada scripts/projects/automat-operat/dev/setup.sh. Bez nich Argo
-# pokaże „repository not found”, a pody ImagePullBackOff.
+# The code repo is private. Argo reads it with a deploy key (the Secret is created by
+# scripts/projects/automat-operat/setup.sh — the project-level one), and k3s pulls images from GHCR
+# with the project token, which dev/setup.sh puts into this namespace as the ghcr-pull Secret.
+# Without them Argo shows "repository not found" and the pods ImagePullBackOff.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: automat-operat-dev
   namespace: argocd
-  # Usunięcie Application (plik znika z gita → root ją prunuje) kasuje też wszystko, co
-  # wdrożyła. Bez tego zasoby zostają w klastrze osierocone — patrz AGENTS.md, Zasady.
+  # Deleting the Application (file disappears from git → root prunes it) also deletes everything
+  # it deployed. Without this the resources stay orphaned in the cluster — see AGENTS.md, Zasady.
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
   source:
-    # SSH, nie https: Secret repo-automat-operat pasuje do Application po URL-u co do znaku.
+    # SSH, not https: the repo-automat-operat Secret matches the Application by URL, character for character.
     repoURL: git@github.com:Manomenu/automat-operat.git
     targetRevision: master
     path: deploy/chart
     helm:
       parameters:
-        # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
+        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
         - name: image.tag
           value: sha-88e292e
-        # Secret docker-registry z setup.sh — obrazy prywatnego repo są prywatne.
+        # docker-registry Secret from setup.sh — images of a private repo are private.
         - name: image.pullSecret
           value: ghcr-pull
-        # Host z terraform/edge/edge.auto.tfvars (apps.automat-operat-dev). Musi się zgadzać
-        # co do znaku — inaczej Traefik odpowie 404, choć logowanie i tunel działają.
+        # Host from terraform/edge/edge.auto.tfvars (apps.automat-operat-dev). Must match
+        # character for character — otherwise Traefik answers 404 even though login and the tunnel work.
         - name: ingress.host
           value: automat-operat-dev.gugnowski.com
 

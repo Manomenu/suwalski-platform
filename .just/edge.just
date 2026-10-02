@@ -1,5 +1,5 @@
-# Warstwa edge: terraform/edge/ — Cloudflare: tunel, DNS i logowanie (Access).
-# Nie potrzebuje klastra ani Proxmoksa; da się ją stosować niezależnie od nich.
+# edge layer: terraform/edge/ — Cloudflare: tunnel, DNS and login (Access).
+# Needs neither the cluster nor Proxmox; it can be applied independently of them.
 
 set positional-arguments
 set shell := ["bash", "-euo", "pipefail", "-c"]
@@ -8,25 +8,25 @@ lib := justfile_directory() / ".just/lib"
 
 [private]
 default:
-    @just --justfile {{justfile()}} --list edge --unsorted --list-heading $'Polecenia — `just edge <polecenie>`:\n'
+    @just --justfile {{justfile()}} --list edge --unsorted --list-heading $'Commands — `just edge <command>`:\n'
 
 [group('tofu')]
-[doc('fmt + validate. Lokalnie, bez dotykania Cloudflare')]
+[doc('fmt + validate. Local, without touching Cloudflare')]
 validate:
     @{{lib}}/tofu.sh validate edge
 
 [group('tofu')]
-[doc('Pokaż, co by się zmieniło w Cloudflare. Niczego nie zmienia')]
+[doc('Show what would change in Cloudflare. Changes nothing')]
 plan *args:
     @{{lib}}/tofu.sh plan edge "$@"
 
 [group('tofu')]
-[doc('Zastosuj. Argumenty idą do tofu, np. -auto-approve')]
+[doc('Apply. Arguments go to tofu, e.g. -auto-approve')]
 apply *args:
     @{{lib}}/tofu.sh apply edge "$@"
 
-[group('stan')]
-[doc('Czy cloudflared w klastrze trzyma tunel: pody i ostatnie linie logu')]
+[group('status')]
+[doc('Is cloudflared in the cluster holding the tunnel: pods and the last log lines')]
 tunnel:
     @kubectl --kubeconfig {{justfile_directory()}}/kubeconfig -n cloudflared get pods -o wide
     @echo

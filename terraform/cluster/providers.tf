@@ -2,13 +2,13 @@ provider "proxmox" {
   endpoint  = var.proxmox_endpoint
   api_token = var.proxmox_api_token
 
-  # Proxmox wystawia własny certyfikat, którego nic nie podpisało. W LAN-ie to
-  # akceptowalne; w internecie nigdy by nie było.
+  # Proxmox serves its own certificate that nobody signed. On the LAN that is
+  # acceptable; on the internet it never would be.
   insecure = var.proxmox_insecure
 
-  # Część operacji (wgranie pliku cloud-init do snippetów, import dysku) provider
-  # wykonuje przez SSH, nie przez API. Klucz bierze z agenta — tego samego, którym
-  # działa `ssh pve`.
+  # Some operations (uploading the cloud-init file to snippets, importing the disk) the
+  # provider performs over SSH, not the API. It takes the key from the agent — the same
+  # one `ssh pve` uses.
   ssh {
     agent    = true
     username = "root"

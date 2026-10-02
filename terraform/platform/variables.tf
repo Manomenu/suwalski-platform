@@ -1,43 +1,43 @@
 variable "argocd_chart_version" {
-  description = "Wersja charta Helma, nie samego Argo CD. Przypięta — ta sama reguła co przy k3s i obrazach."
+  description = "Helm chart version, not Argo CD itself. Pinned — the same rule as for k3s and images."
   type        = string
   default     = "10.9.0" # Argo CD v3.5.2
 }
 
 variable "argocd_namespace" {
-  description = "Przestrzeń nazw dla Argo CD. Własna, tak jak k3s trzyma swoje części w kube-system."
+  description = "Namespace for Argo CD. Its own, just as k3s keeps its parts in kube-system."
   type        = string
   default     = "argocd"
 }
 
 variable "argocd_host" {
-  description = "Nazwa, pod którą otworzysz interfejs. Musi mieścić się we wpisie wieloznacznym w DNS."
+  description = "The name you open the UI at. Must be covered by the wildcard DNS entry."
   type        = string
   default     = "argocd.k8s.suwalski.internal"
 }
 
 variable "enable_dex" {
-  description = "Logowanie przez zewnętrznych dostawców (GitHub, Google). Bez SSO to martwy pod."
+  description = "Login via external providers (GitHub, Google). Without SSO it is a dead pod."
   type        = bool
   default     = false
 }
 
 variable "enable_notifications" {
-  description = "Powiadomienia o wynikach wdrożeń. Włączymy, gdy będzie dokąd je wysyłać — patrz Faza 7."
+  description = "Notifications about deployment results. We will enable them once there is somewhere to send them — see Phase 7."
   type        = bool
   default     = false
 }
 
-# ── Aplikacja korzeniowa ──────────────────────────────────────────────────────
+# ── Root application ──────────────────────────────────────────────────────────
 
 variable "platform_repo_url" {
-  description = "To repo. Argo musi je czytać przez sieć, więc adres publiczny, nie ścieżka lokalna."
+  description = "This repo. Argo must read it over the network, so a public address, not a local path."
   type        = string
   default     = "https://github.com/Manomenu/suwalski-platform.git"
 }
 
 variable "platform_repo_revision" {
-  description = "Gałąź, z której Argo bierze listę aplikacji."
+  description = "Branch Argo takes the list of applications from."
   type        = string
   default     = "master"
 }

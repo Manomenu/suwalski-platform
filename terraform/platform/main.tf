@@ -1,5 +1,5 @@
-# Przestrzeń nazw tworzymy sami, a nie zostawiamy chartowi, żeby jej cykl życia był
-# jawny: usunięcie tej konfiguracji ma po sobie posprzątać.
+# We create the namespace ourselves instead of leaving it to the chart, so its lifecycle is
+# explicit: removing this configuration should clean up after itself.
 resource "kubernetes_namespace" "argocd" {
   metadata {
     name = var.argocd_namespace
@@ -13,14 +13,14 @@ resource "helm_release" "argocd" {
   version    = var.argocd_chart_version
   namespace  = kubernetes_namespace.argocd.metadata[0].name
 
-  # Argo wstaje w kilku krokach i pierwsze uruchomienie bywa wolne — bez tego Terraform
-  # potrafi uznać je za nieudane, choć jeszcze trwa.
+  # Argo starts up in several steps and the first run can be slow — without this Terraform
+  # may treat it as failed while it is still in progress.
   timeout = 600
   wait    = true
 
   values = [yamlencode({
-    # Serwer podaje własny certyfikat samopodpisany. Za traefikiem to tylko podwójne
-    # szyfrowanie i ostrzeżenia w przeglądarce, więc wewnątrz klastra zostajemy przy HTTP.
+    # The server presents its own self-signed certificate. Behind traefik that only means double
+    # encryption and browser warnings, so inside the cluster we stay with HTTP.
     configs = {
       params = {
         "server.insecure" = true
@@ -32,21 +32,21 @@ resource "helm_release" "argocd" {
   })]
 }
 
-# Ingress piszemy sami zamiast włączać ten z charta — dzięki temu widać tu wprost, co
-# traefik ma robić, zamiast szukać tego w wartościach charta.
+# We write the Ingress ourselves instead of enabling the chart's — so it is visible right here
+# what traefik is supposed to do, instead of hunting for it in the chart values.
 resource "kubernetes_ingress_v1" "argocd" {
   metadata {
-    # Własna nazwa tego obiektu, niezwiązana z niczym innym. Celowo NIE „argocd-server",
-    # bo tak nazywa się Usługa w backendzie niżej — dwie różne rzeczy o tej samej nazwie
-    # czytałoby się jak odwołanie, którym nie są. Przy okazji nie zderzy się z Ingressem
-    # z charta, gdyby kiedyś został włączony.
+    # This object's own name, unrelated to anything else. Deliberately NOT "argocd-server",
+    # because that is the name of the Service in the backend below — two different things with
+    # the same name would read like a reference, which they are not. It also will not collide
+    # with the chart's Ingress, should that ever be enabled.
     name      = "argocd-ui"
     namespace = kubernetes_namespace.argocd.metadata[0].name
   }
 
   spec {
-    # k3s wystawia traefika jako domyślną klasę ingressu; nazywamy ją wprost, żeby nie
-    # zależeć od tego, co akurat jest domyślne.
+    # k3s exposes traefik as the default ingress class; we name it explicitly so we do not
+    # depend on whatever happens to be the default.
     ingress_class_name = "traefik"
 
     rule {
@@ -59,9 +59,9 @@ resource "kubernetes_ingress_v1" "argocd" {
 
           backend {
             service {
-              # Chart nazywa swoje zasoby wzorcem <nazwa-wydania>-<komponent>, więc nazwa
-              # usługi wynika z nazwy wydania. Wyliczamy ją zamiast wpisywać: inaczej
-              # zmiana nazwy wydania cicho rozspoiłaby Ingress od usługi.
+              # The chart names its resources <release-name>-<component>, so the service
+              # name follows from the release name. We derive it instead of hardcoding: otherwise
+              # renaming the release would silently disconnect the Ingress from the service.
               name = "${helm_release.argocd.name}-server"
               port { number = 80 }
             }
@@ -71,6 +71,6 @@ resource "kubernetes_ingress_v1" "argocd" {
     }
   }
 
-  # depends_on niepotrzebne: odwołanie do helm_release.argocd.name w backendzie samo
-  # ustawia kolejność.
+  # No depends_on needed: the reference to helm_release.argocd.name in the backend sets
+  # the order by itself.
 }

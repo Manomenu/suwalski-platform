@@ -1,39 +1,39 @@
-# Tunel: stałe, wychodzące połączenie z klastra do Cloudflare. Ruch z internetu wchodzi
-# nim „pod prąd”, więc w routerze nie otwieramy żadnego portu, a domowe IP może się
-# zmieniać, jak chce.
+# Tunnel: a persistent, outbound connection from the cluster to Cloudflare. Internet traffic
+# comes in through it "upstream", so we open no port on the router, and the home IP can
+# change as it pleases.
 #
-# Tutaj tunel tylko POWSTAJE po stronie Cloudflare. Łączy się z nim cloudflared, który
-# biegnie w klastrze (kubernetes/cloudflared/, instaluje go Argo) i przedstawia się
-# tokenem z wyjścia `tunnel_token`.
+# Here the tunnel is only CREATED on the Cloudflare side. It is connected to by cloudflared,
+# which runs in the cluster (kubernetes/cloudflared/, installed by Argo) and identifies itself
+# with the token from the `tunnel_token` output.
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
   account_id = var.account_id
   name       = var.tunnel_name
 
-  # Konfiguracja tras trzymana w Cloudflare, nie w pliku przy cloudflared. Dzięki temu
-  # opisuje ją ten Terraform, a cloudflared potrzebuje jedynie tokena — bez ConfigMapy
-  # z trasami, którą trzeba by trzymać w zgodzie z DNS-em.
+  # Route configuration kept in Cloudflare, not in a file next to cloudflared. That way
+  # this Terraform describes it, and cloudflared needs only the token — no ConfigMap
+  # with routes that would have to be kept in sync with DNS.
   config_src = "cloudflare"
 }
 
-# Trasy: który host idzie dokąd. Czytane od góry, wygrywa pierwsza pasująca reguła.
+# Routes: which host goes where. Read top to bottom, the first matching rule wins.
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
   account_id = var.account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.homelab.id
 
   config = {
     ingress = concat(
-      # Po jednej regule na aplikację, zamiast jednej wieloznacznej *.gugnowski.com —
-      # żeby każda mogła wymagać tokena WŁASNEJ aplikacji Access (niżej).
+      # One rule per application instead of a single wildcard *.gugnowski.com —
+      # so each can require the token of its OWN Access application (below).
       [for name, app in var.apps : {
         hostname = "${name}.${var.zone_name}"
         service  = var.origin_service
 
         origin_request = {
-          # Druga linia obrony. Access przepuszcza tylko zalogowanych, ale gdyby kiedyś
-          # powstał rekord DNS bez aplikacji Access, ruch doszedłby do klastra bez
-          # logowania. Z tym ustawieniem cloudflared sam sprawdza podpisany token Access
-          # i odrzuca żądanie, które go nie ma.
+          # Second line of defense. Access lets only logged-in users through, but if a DNS
+          # record without an Access application were ever created, traffic would reach the
+          # cluster without login. With this setting cloudflared itself checks the signed
+          # Access token and rejects requests that lack it.
           access = {
             required  = true
             team_name = var.team_name
@@ -41,16 +41,16 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
           }
         }
       }],
-      # Reguła końcowa, wymagana przez Cloudflare: wszystko, co nie pasuje wyżej, dostaje 404
-      # od cloudflared i nie dotyka klastra.
+      # Catch-all rule, required by Cloudflare: anything that does not match above gets a 404
+      # from cloudflared and never touches the cluster.
       [{ service = "http_status:404" }],
     )
   }
 }
 
-# Token, którym cloudflared przedstawia się temu tunelowi. Kto go ma, może podpiąć się pod
-# tunel i przejąć ruch — dlatego wyjście jest `sensitive`, a do klastra trafia jako Secret
-# przez scripts/setup.sh, nie przez gita.
+# The token cloudflared uses to identify itself to this tunnel. Whoever has it can attach to
+# the tunnel and take over the traffic — that is why the output is `sensitive` and it reaches
+# the cluster as a Secret via scripts/setup.sh, not via git.
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "homelab" {
   account_id = var.account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.homelab.id

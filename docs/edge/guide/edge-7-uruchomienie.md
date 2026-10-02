@@ -44,7 +44,7 @@ możesz go uruchomić, ma zwrócić `"status": "active"`.
 ./scripts/setup.sh
 ```
 
-To skrypt **platformy**. Pyta o dotychczasowe wartości (Enter = bez zmian) i dwie nowe:
+To skrypt **platformy**. Pyta o dotychczasowe wartości (Enter = keep) i dwie nowe:
 
 - `CLOUDFLARE_API_TOKEN` — token z kroku 3 (nie wyświetla się przy wpisywaniu);
 - `ACCESS_ADMIN` — Twój mail (grupa `admin`, która wpuszcza na `automat-operat-dev`).
@@ -55,12 +55,12 @@ i `.secrets/suwalski-investing-tools.env` — tego nie musisz robić ręcznie.
 **Powinieneś zobaczyć:**
 ```
 == terraform/edge ==
-  zapisane: terraform/edge/secrets.auto.tfvars
-  zapisane: terraform/edge/access/admin.json  (grupa „admin”)
+  saved: terraform/edge/secrets.auto.tfvars
+  saved: terraform/edge/access/admin.json  (group "admin")
 …
-  pominięte: token tunelu (tunelu jeszcze nie ma — najpierw: just edge apply)
+  skipped: tunnel token (no tunnel yet — first: just edge apply)
 ```
-To „pominięte” jest oczekiwane — tunel powstanie w kroku 6.
+To „skipped” jest oczekiwane — tunel powstanie w kroku 6.
 
 Grupa `automat-operat` (Ty i ciocia) jest potrzebna dopiero produkcji. Możesz ją ustawić już
 teraz — `plan` wtedy stworzy od razu obie reguły — albo później, razem z produkcją:
@@ -97,7 +97,7 @@ spodziewasz, to powód, żeby się zatrzymać — tu przy pierwszym razie nie ma
 just edge apply
 ```
 
-**Powinieneś zobaczyć:** `Apply complete! Resources: 6 added` (albo 7) i sekcję „Dalej” z adresem
+**Powinieneś zobaczyć:** `Apply complete! Resources: 6 added` (albo 7) i sekcję „Next” z adresem
 `https://automat-operat-dev.gugnowski.com`. W panelu Zero Trust → *Networks → Tunnels* pojawia się
 tunel `homelab` ze statusem **Inactive** — jeszcze nikt się z nim nie łączy.
 
@@ -109,7 +109,7 @@ tunel `homelab` ze statusem **Inactive** — jeszcze nikt się z nim nie łączy
 
 Drugi raz — teraz tunel istnieje. **Powinieneś zobaczyć:**
 ```
-  Secret cloudflared-token w przestrzeni cloudflared: aktualny
+  Secret cloudflared-token in namespace cloudflared: up to date
 ```
 
 ## Krok 8 — cloudflared przez Argo

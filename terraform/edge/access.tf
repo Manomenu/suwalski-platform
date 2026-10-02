@@ -1,21 +1,21 @@
-# Access: kto może wejść. Trzy klocki, od najbardziej ogólnego:
+# Access: who may get in. Three building blocks, from the most general:
 #
-#   metoda logowania   JAK ktoś udowadnia, kim jest     (tu: kod na maila)
-#   reguła (policy)    KOGO wpuszczamy                   (tu: lista maili z grupy)
-#   aplikacja          CO chronimy                       (tu: host automat-operat-dev.gugnowski.com)
+#   login method       HOW someone proves who they are  (here: a code sent by email)
+#   policy             WHOM we let in                    (here: the list of emails in a group)
+#   application        WHAT we protect                   (here: host automat-operat-dev.gugnowski.com)
 #
-# Aplikacja wskazuje regułę i dozwoloną metodę logowania. Reguła jest wielokrotnego
-# użytku — jedna grupa może chronić kilka aplikacji.
+# The application points to a policy and the allowed login method. A policy is
+# reusable — one group can protect several applications.
 
-# ── Grupy: z plików, nie ze zmiennej ──────────────────────────────────────────
+# ── Groups: from files, not from a variable ──────────────────────────────────
 
-# Każda grupa to plik access/<nazwa>.json z listą maili, poza gitem. Pisze go ten setup.sh,
-# do którego grupa należy: „admin” — platformowy scripts/setup.sh, „automat-operat-dev” —
-# scripts/projects/automat-operat/dev/setup.sh, „automat-operat” —
-# scripts/projects/automat-operat/prod/setup.sh. Każdy skrypt dokłada tylko swój plik, więc
-# projekty nie nadpisują sobie nawzajem grup, a kolejność uruchamiania nie ma znaczenia.
-# (Jedna zmienna w jednym secrets.auto.tfvars zmusiłaby wszystkie skrypty do pisania
-# tego samego pliku.)
+# Each group is a file access/<name>.json with a list of emails, outside git. It is written by
+# the setup.sh that owns the group: "admin" — the platform scripts/setup.sh, "automat-operat-dev" —
+# scripts/projects/automat-operat/dev/setup.sh, "automat-operat" —
+# scripts/projects/automat-operat/prod/setup.sh. Each script adds only its own file, so
+# projects do not overwrite each other's groups and the run order does not matter.
+# (A single variable in a single secrets.auto.tfvars would force all scripts to write
+# the same file.)
 locals {
   access_dir = "${path.module}/access"
   access_groups = {
@@ -24,11 +24,11 @@ locals {
   }
 }
 
-# ── Metoda logowania ──────────────────────────────────────────────────────────
+# ── Login method ──────────────────────────────────────────────────────────────
 
-# One-time PIN: wpisujesz maila, Cloudflare wysyła na niego kod. Jedyna metoda, która nie
-# wymaga zakładania aplikacji u zewnętrznego dostawcy (Google, GitHub…). Kod przychodzi
-# tylko na adres, który przepuszcza jakaś reguła — obcy mail po prostu nic nie dostaje.
+# One-time PIN: you enter your email, Cloudflare sends a code to it. The only method that does
+# not require registering an application with an external provider (Google, GitHub…). The code
+# only goes to an address some policy lets through — a stranger's email simply gets nothing.
 resource "cloudflare_zero_trust_access_identity_provider" "otp" {
   account_id = var.account_id
   name       = "Kod na maila"
@@ -36,7 +36,7 @@ resource "cloudflare_zero_trust_access_identity_provider" "otp" {
   config     = {}
 }
 
-# ── Reguły: po jednej na grupę ────────────────────────────────────────────────
+# ── Policies: one per group ───────────────────────────────────────────────────
 
 resource "cloudflare_zero_trust_access_policy" "group" {
   for_each = local.access_groups
@@ -45,18 +45,18 @@ resource "cloudflare_zero_trust_access_policy" "group" {
   name       = "Grupa: ${each.key}"
   decision   = "allow"
 
-  # include działa jak LUB: wystarczy pasować do jednego wpisu, czyli mieć jeden z maili.
+  # include works as OR: matching one entry is enough, i.e. having one of the emails.
   include = [for email in each.value : { email = { email = email } }]
 
   lifecycle {
     precondition {
       condition     = length(each.value) > 0
-      error_message = "Grupa ${each.key} (access/${each.key}.json) jest pusta — nikogo by nie wpuściła. Uruchom setup.sh, który ją zapisuje."
+      error_message = "Group ${each.key} (access/${each.key}.json) is empty — it would let nobody in. Run the setup.sh that writes it."
     }
   }
 }
 
-# ── Aplikacje ─────────────────────────────────────────────────────────────────
+# ── Applications ──────────────────────────────────────────────────────────────
 
 resource "cloudflare_zero_trust_access_application" "app" {
   for_each = var.apps
@@ -68,13 +68,13 @@ resource "cloudflare_zero_trust_access_application" "app" {
 
   session_duration = var.session_duration
 
-  # Tylko kod na maila, i od razu formularz kodu — bez ekranu wyboru metody, który przy
-  # jednej metodzie byłby dla cioci zbędnym kliknięciem.
+  # Only the email code, straight to the code form — without the method picker, which with
+  # a single method would be a pointless click for auntie.
   allowed_idps              = [cloudflare_zero_trust_access_identity_provider.otp.id]
   auto_redirect_to_identity = true
 
-  # Nie pokazuj aplikacji na stronie startowej Access (<team>.cloudflareaccess.com) —
-  # ciocia wchodzi prosto na swój adres.
+  # Do not show the application on the Access start page (<team>.cloudflareaccess.com) —
+  # auntie goes straight to her address.
   app_launcher_visible = false
 
   policies = [{
@@ -85,7 +85,7 @@ resource "cloudflare_zero_trust_access_application" "app" {
   lifecycle {
     precondition {
       condition     = contains(keys(local.access_groups), each.value.access)
-      error_message = "Aplikacja ${each.key} wpuszcza grupę \"${each.value.access}\", ale nie ma pliku access/${each.value.access}.json. Uruchom setup.sh, który ją zapisuje: scripts/setup.sh (admin) albo scripts/projects/<projekt>/…/setup.sh."
+      error_message = "Application ${each.key} admits group \"${each.value.access}\", but there is no file access/${each.value.access}.json. Run the setup.sh that writes it: scripts/setup.sh (admin) or scripts/projects/<project>/…/setup.sh."
     }
   }
 }

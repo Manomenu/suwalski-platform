@@ -1,18 +1,18 @@
-# Co ma biec w klastrze. Argo obserwuje ten katalog i wprowadza zmiany samo.
+# What should run in the cluster. Argo watches this directory and applies changes on its own.
 #
-# Podział odpowiedzialności, ustalony w roadmapie:
-#   repo z kodem  — publikuje obrazy i opisuje KSZTAŁT wdrożenia (chart)
-#   to repo       — decyduje, KTÓRA WERSJA biegnie
+# Split of responsibilities, agreed in the roadmap:
+#   code repo  — publishes images and describes the SHAPE of the deployment (chart)
+#   this repo  — decides WHICH VERSION runs
 #
-# Dlatego `targetRevision` wskazuje gałąź charta, a `image.tag` niżej jest przypięty
-# do konkretnego obrazu. Historia tego pliku w gicie JEST historią wdrożeń.
+# That is why `targetRevision` points to the chart branch, and `image.tag` below is pinned
+# to a specific image. The git history of this file IS the deployment history.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: suwalski-investing-tools
   namespace: argocd
-  # Usunięcie Application kasuje też wszystko, co wdrożyła — patrz AGENTS.md, Zasady.
-  # PVC z cache ma Delete=false i przeżywa to celowo.
+  # Deleting the Application also deletes everything it deployed — see AGENTS.md, Zasady.
+  # The cache PVC has Delete=false and survives that on purpose.
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -24,26 +24,26 @@ spec:
     path: deploy/chart
     helm:
       parameters:
-        # ↓ TA JEDNA LINIJKA JEST WDROŻENIEM.
-        # W Fazie 6 podbije ją CI commitem; dziś zmieniasz ją ręcznie.
+        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        # In Phase 6 CI will bump it with a commit; today you change it by hand.
         - name: image.tag
           value: sha-737aec8
 
   destination:
     server: https://kubernetes.default.svc
-    # Własna przestrzeń nazw projektu, jak każdy projekt. Bez sufiksu -dev/-prod, bo projekt
-    # ma jedno środowisko; skrót, bo pełna nazwa powtarzałaby się w każdym kubectl -n.
+    # The project's own namespace, like every project. No -dev/-prod suffix, because the project
+    # has a single environment; abbreviated, because the full name would repeat in every kubectl -n.
     namespace: suw-inv-tools
 
   syncPolicy:
     automated:
-      # Wyrównuj, gdy git się zmieni. Bez tego Argo tylko pokazywałoby „OutOfSync"
-      # i czekało na kliknięcie.
+      # Reconcile when git changes. Without this Argo would only show "OutOfSync"
+      # and wait for a click.
       selfHeal: true
-      # Kasuj obiekty, które zniknęły z gita — inaczej po usunięciu czegoś z charta
-      # zostawałoby ono w klastrze na zawsze. PVC jest z tego wyłączony adnotacją.
+      # Delete objects that disappeared from git — otherwise something removed from the chart
+      # would stay in the cluster forever. The PVC is excluded from this by an annotation.
       prune: true
     syncOptions:
-      # Przestrzeń zakłada Argo. Secret suwalski-sec wkłada do niej
-      # scripts/projects/suwalski-investing-tools/setup.sh — ten też ją tworzy, jeśli trzeba.
+      # Argo creates the namespace. The suwalski-sec Secret is put into it by
+      # scripts/projects/suwalski-investing-tools/setup.sh — which also creates it if needed.
       - CreateNamespace=true

@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.9"
 
   required_providers {
-    # Wersja 5 to przepisany od zera provider, generowany z API Cloudflare. Nazwy zasobów
-    # i kształt pól różnią się od wersji 4, więc poradniki sprzed 2025 roku zwykle nie
-    # pasują — patrz docs/edge/guide/.
+    # Version 5 is a provider rewritten from scratch, generated from the Cloudflare API. Resource
+    # names and field shapes differ from version 4, so guides from before 2025 usually do not
+    # fit — see docs/edge/guide/.
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.25"

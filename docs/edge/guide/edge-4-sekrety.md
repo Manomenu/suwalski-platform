@@ -69,12 +69,16 @@ scripts/projects/automat-operat/prod/setup.sh     PROJEKT automat-operat, środo
     ├─> .secrets/automat-operat-prod.env
     └─> terraform/edge/access/automat-operat.json grupa „automat-operat”: Ty i ciocia
 
+scripts/projects/automat-operat/setup.sh          PROJEKT automat-operat, wspólne dla środowisk
+    pyta o: GHCR_USER, GHCR_TOKEN
+    ├─> .secrets/automat-operat.env
+    ├─> .secrets/automat-operat-deploy-key        generowany; publiczna połowa → GitHub
+    └─> Secret repo-automat-operat w argocd       Argo czyta prywatne repo
+
 scripts/projects/automat-operat/dev/setup.sh      PROJEKT automat-operat, środowisko dev
-    pyta o: ACCESS_AUTOMAT_OPERAT_DEV, GHCR_USER, GHCR_TOKEN
+    pyta o: ACCESS_AUTOMAT_OPERAT_DEV (token GHCR bierze z pliku projektu)
     ├─> .secrets/automat-operat-dev.env
     ├─> terraform/edge/access/automat-operat-dev.json grupa „automat-operat-dev”: Ty i testujący
-    ├─> .secrets/automat-operat-deploy-key        generowany; publiczna połowa → GitHub
-    ├─> Secret repo-automat-operat w argocd       Argo czyta prywatne repo
     └─> Secret ghcr-pull w automat-operat-dev     k3s pobiera prywatne obrazy
 
 scripts/projects/suwalski-investing-tools/setup.sh
@@ -151,7 +155,7 @@ just edge apply
 ```
 
 Stąd zasada: **po pierwszym `just edge apply` uruchom `./scripts/setup.sh` jeszcze raz.**
-Za pierwszym razem skrypt napisze „pominięte: token tunelu (tunelu jeszcze nie ma)”.
+Za pierwszym razem skrypt napisze „skipped: tunnel token (no tunnel yet)”.
 
 ### Czemu nie prościej — Terraform od razu wkłada Secret do klastra?
 

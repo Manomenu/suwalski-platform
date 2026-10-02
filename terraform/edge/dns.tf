@@ -1,8 +1,8 @@
-# Rekordy DNS: automat-operat-dev.gugnowski.com → tunel.
+# DNS records: automat-operat-dev.gugnowski.com → tunnel.
 #
-# Rekord to CNAME na <id-tunelu>.cfargotunnel.com, a nie A na jakiś adres IP — tunel nie
-# ma publicznego IP, istnieje tylko wewnątrz sieci Cloudflare. Stąd `proxied = true`:
-# bez proxy Cloudflare przeglądarka dostałaby nazwę, której nie da się rozwiązać.
+# The record is a CNAME to <tunnel-id>.cfargotunnel.com, not an A to some IP address — the tunnel
+# has no public IP, it exists only inside the Cloudflare network. Hence `proxied = true`:
+# without the Cloudflare proxy the browser would get a name that cannot be resolved.
 
 data "cloudflare_zone" "main" {
   filter = {
@@ -10,8 +10,8 @@ data "cloudflare_zone" "main" {
   }
 }
 
-# Jeden rekord na aplikację, z tej samej mapy var.apps co aplikacje Access i trasy tunelu.
-# To celowe: nie da się dopisać rekordu, nie dopisując zarazem reguły, kto może wejść.
+# One record per application, from the same var.apps map as the Access applications and tunnel routes.
+# This is deliberate: you cannot add a record without also adding a rule for who may get in.
 resource "cloudflare_dns_record" "app" {
   for_each = var.apps
 
@@ -20,7 +20,7 @@ resource "cloudflare_dns_record" "app" {
   type    = "CNAME"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab.id}.cfargotunnel.com"
   proxied = true
-  ttl     = 1 # „automatic” — przy proxied TTL i tak ustala Cloudflare
+  ttl     = 1 # "automatic" — with proxied, Cloudflare sets the TTL anyway
 
   comment = "terraform/edge (suwalski-platform) — nie edytuj w panelu"
 }
