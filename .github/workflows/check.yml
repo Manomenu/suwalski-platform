@@ -27,7 +27,8 @@ env:
   KUBECONFORM: "0.8.0"
   ACTIONLINT: "1.7.12"
   GITLEAKS: "8.30.1"
-  TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.tofu-plugins
+  # Outside the checkout: inside it, the checks would read the providers' files as the repo's.
+  TF_PLUGIN_CACHE_DIR: /home/runner/.cache/tofu-plugins
 
 jobs:
   check:
