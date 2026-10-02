@@ -7,16 +7,17 @@ later you have a working Kubernetes cluster that deploys applications by itself.
 Built for a homelab: small enough to understand end to end, close enough to how it is done
 in the cloud that the habits transfer.
 
-## Two layers
+## Three layers
 
-The repo is split in two, because the two halves change at completely different speeds. The
-cluster is built once and then largely left alone; what runs on it changes every time an
-application is released.
+The repo is split by how often things change and what they talk to. The cluster is built
+once and then largely left alone; what runs on it changes every time an application is
+released; the way in from the internet changes when an application is added.
 
 | Layer | Directory | What it is |
 | --- | --- | --- |
-| **cluster** | `terraform/cluster/` | The machine. A Debian VM on Proxmox with k3s on it. |
+| **cluster** | `terraform/cluster/` | The machine. A Debian VM on Proxmox with k3s on it, plus a data disk on the NAS. |
 | **platform** | `terraform/platform/` | What lives inside the cluster. Argo CD, and through it every application. |
+| **edge** | `terraform/edge/` | Cloudflare: the tunnel, DNS and who may log in (Access). |
 
 Nothing is clicked in the Proxmox UI, and nothing is deployed by running `kubectl apply` by
 hand. If you change either by hand, the next `apply` puts it back.
@@ -150,14 +151,17 @@ Type `just` to see the modules, `just <module>` to see what each one can do.
 | --- | --- |
 | `just cluster plan` | Show what would change on Proxmox |
 | `just cluster apply` | Apply it. Extra arguments go straight to `tofu`, so `-auto-approve` skips the prompt |
-| `just cluster validate` | Format and check the files — offline, quick |
 | `just cluster kubeconfig` | Fetch the kubeconfig and add it as context `homelab` next to any other clusters. Safe to re-run |
 | `just cluster ssh` | Log in to the k3s node |
-| `just platform plan` · `apply` · `validate` | The same, for what runs *inside* the cluster |
+| `just cluster nas-disk` | Format (only if empty) and mount the NAS data disk on the node. Safe to re-run |
+| `just platform plan` · `apply` | The same, for what runs *inside* the cluster |
+| `just edge plan` · `apply` | The same, for Cloudflare |
+| `just check` | The quality gate — formats, lints, schemas, repo rules, secrets. CI runs exactly this on every push |
+| `just check live` | Does every layer's plan match the real environment, is every Argo app synced and healthy |
+| `just check fmt` | Apply the formatters the gate checks |
 | `just argo password` | Argo CD's initial admin password, decoded |
 | `just argo apps` | Every application: in sync with git? healthy? |
 | `just argo refresh [app]` | Make Argo CD check git now instead of within ~3 minutes |
-| `just k9s logs` | k9s's own log — the only place it explains itself |
 
 A few things stay as plain scripts, because `just` cannot do them: it runs in a child
 process, so it cannot change your shell, and it cannot install itself.
@@ -186,6 +190,7 @@ one that is there. Argo CD picks it up on its own.
 - [`argocd/README.md`](argocd/README.md) — how the application definitions are organised.
 - [`AGENTS.md`](AGENTS.md) — conventions: where values belong, when to extract a module,
   how the files are split.
+- [`docs/nas.md`](docs/nas.md) — the data disk on the NAS: from the SSDs to a storage class.
 - [`docs/multiple_env.md`](docs/multiple_env.md) — what to do when a second environment
   appears, and why a directory beats a workspace.
 - [`docs/cheatsheet.md`](docs/cheatsheet.md) — every command this repo uses, in one
@@ -197,8 +202,9 @@ Those are written in Polish; the code and this page are not.
 ## Related
 
 Applications live separately, in
-[`suwalski-investing-tools`](https://github.com/Manomenu/suwalski-investing-tools). That
-repo publishes container images and carries the Helm chart; this one decides what runs.
+[`suwalski-investing-tools`](https://github.com/Manomenu/suwalski-investing-tools) and
+`automat-operat` (private). Those repos publish container images and carry the Helm charts;
+this one decides what runs.
 
 ## License
 

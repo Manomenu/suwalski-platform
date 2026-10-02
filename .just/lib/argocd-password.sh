@@ -7,10 +7,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-command -v kubectl >/dev/null || { echo "kubectl not found" >&2; exit 1; }
+command -v kubectl >/dev/null || {
+    echo "kubectl not found" >&2
+    exit 1
+}
 # Always our own file, not KUBECONFIG from the shell: one merged from many clusters targets
 # whichever happens to be selected — and that may be GKE from suwalski-gcloud-platform.
-[ -f "$ROOT/kubeconfig" ] || { echo "missing $ROOT/kubeconfig — just cluster kubeconfig" >&2; exit 1; }
+[ -f "$ROOT/kubeconfig" ] || {
+    echo "missing $ROOT/kubeconfig — just cluster kubeconfig" >&2
+    exit 1
+}
 export KUBECONFIG="$ROOT/kubeconfig"
 
 NS="${ARGOCD_NAMESPACE:-argocd}"

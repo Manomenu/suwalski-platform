@@ -73,7 +73,7 @@ fi
 # ── current session ───────────────────────────────────────────────────────────
 # The same list as in 80-kube.zsh, just without zsh syntax — the script is sometimes sourced from bash.
 if [ "$_kube_sourced" -eq 1 ]; then
-    [ -f "$HOME/.kube/config" ] || (umask 077 && : > "$HOME/.kube/config")
+    [ -f "$HOME/.kube/config" ] || (umask 077 && : >"$HOME/.kube/config")
     _kube_list="$HOME/.kube/config"
     # find instead of a glob: an empty glob in zsh aborts the sourced script ("no matches").
     for _kube_f in $(find "$_kube_dir" -maxdepth 1 -name '*.yaml' 2>/dev/null | sort); do

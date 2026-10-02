@@ -13,13 +13,16 @@ terraform/
   platform/         Argo CD + aplikacja korzeniowa        (osobna konfiguracja główna)
   edge/             Cloudflare: tunel, DNS, Access        (osobna konfiguracja główna)
 argocd/
-  apps/platform/    Application'y wspólne dla klastra (cloudflared)
+  apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage)
   apps/projects/    Application'y projektów — po pliku na projekt i środowisko
-  manifests/        manifesty elementów platformy bez własnego repo
+  manifests/        manifesty elementów platformy: <element>/ — para z apps/platform/<element>.yaml
 justfile            tylko lista modułów
 .just/
-  <moduł>.just      recepty: cluster · platform · edge · argo · k9s
-  lib/              bash, którego recepty używają — nie wołać z ręki
+  <moduł>.just      recepty: cluster · platform · edge · check · argo
+  lib/              bash, którego recepty używają (też bramka: check.sh, repo-rules.sh) — nie wołać z ręki
+.github/workflows/  CI: check.yml odpala `just check` przy każdym pushu
+.tflint.hcl         reguły tflint dla wszystkich warstw
+.yamllint.yaml      reguły yamllint dla argocd/ i .github/
 scripts/            tylko to, czego just nie zrobi: source do powłoki i sekrety
   setup.sh          platforma: just + sekrety wspólne dla klastra
   projects/         sekrety projektów: <projekt>/[<środowisko>/]setup.sh
@@ -46,6 +49,43 @@ poleceniami: nowy krok przygotowania dopisujesz tam i wołasz z `setup.sh`.
 kto może wejść na jego adres, hasła aplikacji — ma skrypt w
 `scripts/projects/<projekt>/[<środowisko>/]setup.sh` i własny plik w `.secrets/`. Każdy
 skrypt czyta i pisze tylko swoje; wspólne funkcje są w `scripts/.internal/lib.sh`.
+
+### Gdzie co leży — zasady, które trzymają układ
+
+- **Terraform:** jedna konfiguracja główna na warstwę (`terraform/<warstwa>/`), z własnym
+  stanem i modułem just o tej samej nazwie. Nowa warstwa = katalog + moduł + wiersz w README.
+- **Argo:** element platformy to zawsze **para** — `argocd/apps/platform/<element>.yaml`
+  i `argocd/manifests/<element>/`. Projekt to jeden plik w `apps/projects/` (chart leży
+  w repo projektu). `just check` pilnuje, żeby para była kompletna.
+- **Bash ma trzy miejsca, każde z jednym powodem:** `.just/lib/` — implementacja recept
+  (wołana przez just i przez CI); `scripts/` — tylko to, czego just nie zrobi (`source`
+  do powłoki, `setup.sh` przed instalacją just); `scripts/.internal/` — kroki i funkcje
+  tych skryptów. Nowy kod bashowy trafia do pierwszego pasującego miejsca z tej listy.
+- **Ręczne kroki poza kodem** (np. OpenMediaVault) dostają notatkę w `docs/` z tabelą
+  „co jest w kodzie, a co nie” — jak `docs/nas.md`.
+
+## Bramka jakości: `just check`
+
+Jedno polecenie sprawdza wszystko, co da się sprawdzić bez ludzi, a CI
+(`.github/workflows/check.yml`) odpala **dokładnie je** przy każdym pushu. Przed oddaniem
+zmiany: `just check` ma przejść. Formatowanie poprawia `just check fmt`.
+
+| Krok | Narzędzie |
+| --- | --- |
+| format i poprawność Terraformu w każdej warstwie | `tofu fmt -check`, `tofu validate`, tflint (`.tflint.hcl`) |
+| bash | shellcheck, shfmt (`-i 4 -ci`) |
+| justfile i moduły | `just --fmt --check` |
+| YAML, manifesty, CI | yamllint (`.yamllint.yaml`), kubeconform `-strict` (także CRD Argo), actionlint |
+| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach |
+| sekrety | gitleaks na całej historii i na niezacommitowanych zmianach |
+
+`just check live` sprawdza żywe środowisko: plan każdej warstwy bez zmian (dryf = ktoś
+kliknął albo kod nie został zastosowany) i każda aplikacja Argo `Synced`/`Healthy`. Wymaga
+sieci domowej i sekretów, więc nie biegnie w CI.
+
+**Nowa zasada z tego pliku, którą da się sprawdzić maszynowo, trafia też do
+`repo-rules.sh`.** Wersje narzędzi w CI są przypięte w `check.yml` i mają odpowiadać tym
+z dotfiles (`home.nix`) — podbijamy je razem.
 
 ## Warstwy wartości
 

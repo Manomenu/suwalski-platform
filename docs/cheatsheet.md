@@ -10,18 +10,8 @@ węzeł `aoostar`, maszyna 119 pod `192.168.0.119`.
 Nie trzeba pamiętać ścieżek ani flag — od tego jest `just`. Samo `just` pokazuje moduły,
 `just <moduł>` ich polecenia.
 
-| Polecenie | Co robi |
-| --- | --- |
-| `just cluster validate` | `fmt` + `validate`. Lokalnie, bez dotykania Proxmoksa. Przed każdym commitem. |
-| `just cluster plan` | Pokazuje, co by się zmieniło. Niczego nie zmienia. |
-| `just cluster apply` | Robi to. `-auto-approve` pomija pytanie o zgodę. |
-| `just cluster kubeconfig` | Pobiera kubeconfig, nazywa kontekst `homelab` i dokłada go do `~/.kube/configs/` obok innych klastrów. Bezpieczne do powtarzania. |
-| `kubectl config use-context homelab` | Przełącza na homelab (drugi kontekst: `gke`). W k9s: `:ctx`. |
-| `just cluster ssh` | Logowanie na węzeł k3s. |
-| `just platform plan` · `apply` · `validate` | To samo dla warstwy w klastrze. |
-| `just argo password` · `apps` | Hasło admina Argo · stan aplikacji (sync, health). |
-| `just argo refresh [app]` | Argo sprawdza gita od razu, zamiast w ciągu ~3 minut. Bez argumentu: wszystkie. |
-| `just k9s logs [-f]` | Log k9s — jedyne miejsce, gdzie tłumaczy się ze swoich decyzji. |
+Opisy poleceń są w samych recepturach, więc nie powtarzamy ich tutaj. Najczęstsze: `just check`
+(przed commitem), `just <warstwa> plan` / `apply`, `just argo apps`.
 
 Poza `just`, bo `just` nie zmieni Twojej powłoki i nie zainstaluje sam siebie:
 
@@ -134,7 +124,7 @@ Po dwukropku. To te same nazwy, których używa `kubectl get`.
 | `:q` | Wyjście. |
 
 **Pusty widok to zwykle nie awaria.** Albo patrzysz na pustą przestrzeń nazw (`0`
-pomaga), albo k9s nie ma kontekstu — a to rozstrzyga `just k9s logs`:
+pomaga), albo k9s nie ma kontekstu — a to rozstrzyga log `~/.local/state/k9s/k9s.log`:
 `No resources found` znaczy „działa, tylko pusto”, `No context configured` znaczy
 „nie wiem, gdzie jest klaster”.
 

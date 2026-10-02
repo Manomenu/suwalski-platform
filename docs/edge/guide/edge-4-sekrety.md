@@ -85,7 +85,7 @@ scripts/projects/suwalski-investing-tools/setup.sh
     pyta o: SEC_USER_AGENT  ──>  Secret suwalski-sec
 ```
 
-Listy maili podajesz po przecinku (`ty@gmail.com, ciocia@gmail.com`), skrypt zamienia je
+Listy maili podajesz po przecinku (`ty@example.com, ciocia@example.com`), skrypt zamienia je
 na listę JSON. Wspólne kawałki skryptów (pytanie, maskowanie, zapis grupy, Secret) są
 w `scripts/.internal/lib.sh`, więc skrypt projektu to kilkanaście linijek.
 

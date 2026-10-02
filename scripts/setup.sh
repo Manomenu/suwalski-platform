@@ -24,13 +24,12 @@ source "$ROOT/scripts/.internal/lib.sh"
 # First, because everything after setup goes through `just`. Missing just does not block
 # the secrets — we distribute them anyway, and the warning stays on screen.
 echo "== Tools =="
-"$ROOT/scripts/.internal/install-just.sh" \
-    || echo "  warning: without just no \`just ...\` will work — distributing the secrets anyway" >&2
+"$ROOT/scripts/.internal/install-just.sh" ||
+    echo "  warning: without just no \`just ...\` will work — distributing the secrets anyway" >&2
 
 # ── platform secrets ──────────────────────────────────────────────────────────
 echo
 echo "== Platform secrets =="
-migrate_old_env
 load_source platform
 echo "  source: ${SOURCE#"$ROOT"/}"
 
@@ -67,7 +66,7 @@ TFV="$ROOT/terraform/cluster/secrets.auto.tfvars"
         echo
         printf 'proxmox_api_token = "%s"\n\n' "${CURRENT[PROXMOX_API_TOKEN]}"
         printf 'ssh_public_keys = [\n  "%s",\n]\n' "${CURRENT[SSH_PUBLIC_KEY]}"
-    } > "$TFV"
+    } >"$TFV"
 )
 echo "  saved: ${TFV#"$ROOT"/}"
 
@@ -82,7 +81,7 @@ TFV="$ROOT/terraform/edge/secrets.auto.tfvars"
         echo "# The source is .secrets/platform.env. Access groups are in access/*.json."
         echo
         printf 'cloudflare_api_token = "%s"\n' "${CURRENT[CLOUDFLARE_API_TOKEN]}"
-    } > "$TFV"
+    } >"$TFV"
 )
 echo "  saved: ${TFV#"$ROOT"/}"
 write_group admin "${CURRENT[ACCESS_ADMIN]}"

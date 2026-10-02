@@ -51,8 +51,10 @@ else
     curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to "$HOME/.local/bin"
     case ":$PATH:" in
         *":$HOME/.local/bin:"*) ;;
-        *) echo "  warning: ~/.local/bin is not in PATH — add it in your shell config" >&2
-           export PATH="$HOME/.local/bin:$PATH" ;;
+        *)
+            echo "  warning: ~/.local/bin is not in PATH — add it in your shell config" >&2
+            export PATH="$HOME/.local/bin:$PATH"
+            ;;
     esac
 fi
 

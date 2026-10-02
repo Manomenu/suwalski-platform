@@ -13,7 +13,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 [private]
 default:
-    @just --justfile {{justfile()}} --list --unsorted --list-heading $'Modules — `just <module>` shows its commands:\n'
+    @just --justfile {{ justfile() }} --list --unsorted --list-heading $'Modules — `just <module>` shows its commands:\n'
 
 [doc('Proxmox: virtual machine with k3s')]
 [group('layers')]
@@ -27,10 +27,10 @@ mod platform '.just/platform.just'
 [group('layers')]
 mod edge '.just/edge.just'
 
+[doc('Quality gate (CI runs the same): `just check`, `just check live`, `just check fmt`')]
+[group('quality')]
+mod check '.just/check.just'
+
 [doc('Argo CD: password and application status')]
 [group('operations')]
 mod argo '.just/argo.just'
-
-[doc('k9s: its own log')]
-[group('operations')]
-mod k9s '.just/k9s.just'

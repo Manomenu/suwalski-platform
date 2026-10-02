@@ -12,7 +12,7 @@ maili. Pliki `*.json` są **poza gitem** (repo jest publiczne) — generują je 
 Kształt:
 
 ```json
-["ty@gmail.com", "ciocia@gmail.com"]
+["ty@example.com", "ciocia@example.com"]
 ```
 
 `access.tf` składa grupy ze wszystkich plików w tym katalogu. Aplikacja w `edge.auto.tfvars`

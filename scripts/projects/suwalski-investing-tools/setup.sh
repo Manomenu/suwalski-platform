@@ -10,7 +10,6 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 source "$ROOT/scripts/.internal/lib.sh"
 
 echo "== suwalski-investing-tools: secrets =="
-migrate_old_env
 load_source suwalski-investing-tools
 echo "  source: ${SOURCE#"$ROOT"/}"
 

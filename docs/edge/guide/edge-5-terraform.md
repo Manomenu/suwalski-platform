@@ -132,7 +132,7 @@ generuje `scripts/setup.sh` — wzór jest dla czytelnika.
 
 ## 5b. `access/` — grupy
 
-Katalog z plikami `<grupa>.json`, każdy z listą maili: `["ty@gmail.com", "ciocia@gmail.com"]`.
+Katalog z plikami `<grupa>.json`, każdy z listą maili: `["ty@example.com", "ciocia@example.com"]`.
 Pliki `*.json` są w `.gitignore`; w gicie jest tylko `access/README.md` z tabelą, który
 skrypt pisze którą grupę. Czemu tak — rozdział 4.
 

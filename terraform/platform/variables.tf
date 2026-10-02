@@ -23,7 +23,7 @@ variable "enable_dex" {
 }
 
 variable "enable_notifications" {
-  description = "Notifications about deployment results. We will enable them once there is somewhere to send them — see Phase 7."
+  description = "Notifications about deployment results. We will enable them once there is somewhere to send them."
   type        = bool
   default     = false
 }
