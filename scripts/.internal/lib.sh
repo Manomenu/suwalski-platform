@@ -181,3 +181,25 @@ database_access() {
         kubectl apply -f - >/dev/null
     echo "  Secret database (DATABASE_URL) in namespace $ns: up to date"
 }
+
+# access_config NAMESPACE APP — what an app's backend needs to verify the Cloudflare Access
+# login token: the team domain (token issuer and signing keys) and the app's audience tag.
+# Both are terraform/edge outputs, so this runs after `just edge apply`; nothing is secret,
+# hence a ConfigMap, "cloudflare-access".
+access_config() {
+    local ns="$1" app="$2" team aud
+    team="$(tofu -chdir="$ROOT/terraform/edge" output -raw access_team_domain 2>/dev/null)" || {
+        echo "  skipped cloudflare-access: no terraform/edge outputs yet (just edge apply)"
+        return 0
+    }
+    aud="$(tofu -chdir="$ROOT/terraform/edge" output -json access_aud | jq -r --arg app "$app" '.[$app] // empty')"
+    [ -n "$aud" ] || {
+        echo "  skipped cloudflare-access: no Access application \"$app\" in terraform/edge (edge.auto.tfvars → apps)"
+        return 0
+    }
+    kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    kubectl -n "$ns" create configmap cloudflare-access \
+        --from-literal=CF_ACCESS_TEAM_DOMAIN="$team" --from-literal=CF_ACCESS_AUD="$aud" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    echo "  ConfigMap cloudflare-access in namespace $ns: up to date"
+}
