@@ -1,0 +1,33 @@
+# postgres — one PostgreSQL shared by every project and environment, each with its own
+# database and role. One instance, because every extra one costs a few hundred MB of RAM
+# the node does not have.
+#
+# Data on the "nas" storage class (the RAID1 SSDs in OpenMediaVault, docs/nas.md). Projects
+# get their password by their own setup.sh (database_access in scripts/.internal/lib.sh):
+# generated once, kept in a Secret here, copied to the project as DATABASE_URL.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/postgres
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: postgres
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      # Cluster and Database are types the cloudnative-pg app brings; until it has, the
+      # dry run would fail instead of retrying.
+      - SkipDryRunOnMissingResource=true

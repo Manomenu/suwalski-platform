@@ -1,0 +1,37 @@
+# yamllint disable-line rule:line-length
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/cluster_v1.json
+# The shared PostgreSQL. Connect from a project namespace at shared-rw.postgres.svc:5432.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: shared
+  annotations:
+    # Never deleted by an Argo prune: deleting the Cluster deletes its volume claim. Removing
+    # the database is a deliberate step, not a side effect of a missing file.
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  instances: 1
+  # The "minimal" image: PostgreSQL without bundled extensions. Pinned to one build.
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-202609281634-minimal-trixie
+
+  storage:
+    storageClass: nas
+    size: 10Gi
+
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+  postgresql:
+    parameters:
+      shared_buffers: 128MB
+
+  # One login role per project and environment. The password comes from the Secret of the
+  # same name in this namespace, which the project's setup.sh creates (database_access).
+  managed:
+    roles:
+      - name: automat_operat_dev
+        ensure: present
+        login: true
+        passwordSecret:
+          name: automat-operat-dev

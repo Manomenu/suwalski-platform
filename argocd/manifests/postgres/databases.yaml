@@ -1,0 +1,13 @@
+# yamllint disable-line rule:line-length
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/database_v1.json
+# One database per project and environment, owned by its role (cluster.yaml, managed.roles).
+# databaseReclaimPolicy defaults to retain: removing an entry here leaves the data in place.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: automat-operat-dev
+spec:
+  cluster:
+    name: shared
+  name: automat_operat_dev
+  owner: automat_operat_dev

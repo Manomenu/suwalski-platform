@@ -3,6 +3,7 @@
 #
 #   .secrets/automat-operat-dev.env  ──>  terraform/edge/access/automat-operat-dev.json  (group "automat-operat-dev")
 #   .secrets/automat-operat.env      ──>  Secret ghcr-pull in namespace automat-operat-dev  (project token)
+#   (generated in the cluster)       ──>  Secret database in namespace automat-operat-dev   (DATABASE_URL)
 #
 # Access to automat-operat-dev.gugnowski.com is granted by dev's OWN group, "automat-operat-dev":
 # you and the testers. Deliberately not the production group — changing the list of people in
@@ -49,6 +50,8 @@ echo
 echo "== cluster =="
 if cluster_available; then
     registry_secret "$NAMESPACE" ghcr-pull ghcr.io "$GHCR_USER" "$GHCR_TOKEN"
+    # Role and database are declared in argocd/manifests/postgres/.
+    database_access "$NAMESPACE" automat_operat_dev
 fi
 
 echo
