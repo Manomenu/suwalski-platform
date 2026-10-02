@@ -37,6 +37,16 @@ resource "proxmox_virtual_environment_file" "user_data" {
   }
 }
 
+# The NAS as Proxmox storage for VM disks. Proxmox mounts it over NFS and the machine sees a
+# plain disk, so the database on it gets ordinary disk semantics instead of NFS in a pod.
+resource "proxmox_storage_nfs" "nas" {
+  id      = "nas"
+  nodes   = [var.node_name]
+  server  = var.nas_server
+  export  = var.nas_export
+  content = ["images"]
+}
+
 resource "proxmox_virtual_environment_vm" "k3s" {
   name      = var.vm_name
   node_name = var.node_name
@@ -71,6 +81,25 @@ resource "proxmox_virtual_environment_vm" "k3s" {
     size         = var.vm_disk_gb
     discard      = "on"
     ssd          = true
+  }
+
+  # Data disk on the NAS, mounted in the machine at /mnt/nas (k3s storage class "nas").
+  # Left out of Proxmox backups: they would copy the NAS onto itself; off-site backups of
+  # what lives here are the job of the applications (PostgreSQL archiving).
+  disk {
+    datastore_id = proxmox_storage_nfs.nas.id
+    interface    = "scsi1"
+    size         = var.nas_disk_gb
+    file_format  = "raw"
+    discard      = "on"
+    ssd          = true
+    backup       = false
+  }
+
+  # The NAS is a VM on this host (OpenMediaVault, started with order 1). This machine
+  # starts after it and stops before it, so its NAS disk is never left without the NAS.
+  startup {
+    order = 2
   }
 
   network_device {

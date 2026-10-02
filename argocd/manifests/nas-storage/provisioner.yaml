@@ -1,0 +1,177 @@
+# A second local-path-provisioner, next to the one k3s ships: same program, its own name,
+# its own directory. k3s rewrites its bundled provisioner's config on every restart, so a
+# second path cannot be added there — a separate instance is the supported way.
+#
+# Based on rancher/local-path-provisioner v0.0.37 deploy/local-path-storage.yaml (the
+# version k3s runs). Changes: names, --provisioner-name, the path, a pinned helper image.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nas-path-provisioner
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nas-path-provisioner
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nas-path-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nas-path-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: nas-path-provisioner
+    namespace: nas-storage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nas-path-provisioner
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "persistentvolumeclaims", "configmaps", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nas-path-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nas-path-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: nas-path-provisioner
+    namespace: nas-storage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nas-path-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nas-path-provisioner
+  template:
+    metadata:
+      labels:
+        app: nas-path-provisioner
+    spec:
+      serviceAccountName: nas-path-provisioner
+      containers:
+        - name: provisioner
+          image: docker.io/rancher/local-path-provisioner:v0.0.37
+          command:
+            - local-path-provisioner
+            - start
+            - --config
+            - /etc/config/config.json
+            # Its own name, so it never picks up claims meant for k3s's provisioner, and back.
+            - --provisioner-name
+            - platform.local/nas-path
+            - --configmap-name
+            - nas-path-config
+            # The helper pods that create and delete volume directories run as this account.
+            - --service-account-name
+            - nas-path-provisioner
+          ports:
+            - name: health
+              containerPort: 8080
+          startupProbe:
+            httpGet: { path: /health, port: health }
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet: { path: /health, port: health }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /ready, port: health }
+            periodSeconds: 5
+          # No CPU limit on purpose, as in cloudflared: a limit only throttles a process that
+          # would otherwise use idle CPU. The request reserves its share; memory is capped.
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 64Mi }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config/
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MOUNT_PATH
+              value: /etc/config/
+            - name: HEALTH_PORT
+              value: "8080"
+      volumes:
+        - name: config
+          configMap:
+            name: nas-path-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nas-path-config
+data:
+  # /mnt/nas is the NAS disk (just cluster nas-disk). If it is not mounted, volumes would
+  # silently land on the NVMe underneath — the setup script refuses that instead.
+  config.json: |-
+    {
+      "nodePathMap": [
+        { "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES", "paths": ["/mnt/nas"] }
+      ]
+    }
+  setup: |-
+    #!/bin/sh
+    set -eu
+    grep -q " /mnt/nas " /proc/mounts || { echo "/mnt/nas is not mounted (NAS disk missing)" >&2; exit 1; }
+    mkdir -m 0777 -p "$VOL_DIR"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$VOL_DIR"
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: helper-pod
+          image: docker.io/library/busybox:1.37.0
+          imagePullPolicy: IfNotPresent
+---
+# Retain: deleting a claim (by hand, or an app pruned by Argo) leaves the data on the NAS; the
+# volume is released, not wiped. Removing data for good is a deliberate step.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nas
+provisioner: platform.local/nas-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain

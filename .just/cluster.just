@@ -31,6 +31,11 @@ kubeconfig:
     @{{root}}/scripts/cluster/kubectl-setup.sh
     @echo "  or right away in this shell:  exec zsh"
 
+[group('machine')]
+[doc('Format (only if empty) and mount the NAS disk at /mnt/nas on the k3s node. Safe to repeat')]
+nas-disk:
+    @cd {{root}}/terraform/cluster && {{lib}}/nas-disk.sh "$(tofu output -raw vm_user)@$(tofu output -raw vm_ip)"
+
 [group('access')]
 [doc('Log in to the k3s node (not the Proxmox host — that is `ssh pve`)')]
 ssh:

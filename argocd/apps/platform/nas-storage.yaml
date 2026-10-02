@@ -1,0 +1,29 @@
+# nas-storage — the "nas" storage class: volumes on the k3s machine's NAS disk (/mnt/nas).
+#
+# The disk itself comes from terraform/cluster (a second machine disk on the NFS storage
+# "nas", OpenMediaVault's RAID1) and is mounted by `just cluster nas-disk`. This app only
+# hands out directories on it. What should live there: data that must not sit on the host's
+# NVMe — PostgreSQL, case files. Everything else stays on the default local-path class.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nas-storage
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/nas-storage
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nas-storage
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
