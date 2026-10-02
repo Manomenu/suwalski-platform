@@ -1,0 +1,37 @@
+# CloudNativePG — the operator that runs PostgreSQL in the cluster. It watches Cluster and
+# Database objects (argocd/manifests/postgres/) and does the rest: the pod, the volume,
+# roles, databases, failover and backups.
+#
+# Installed from the project's own Helm chart, pinned like every version here: there is
+# nothing of ours to add to it, so it has no argocd/manifests/<name>/ directory.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.29.1 # operator 1.30.1
+    helm:
+      valuesObject:
+        # No CPU limit, as everywhere here; memory capped. The node has 6 GiB in total.
+        resources:
+          requests: { cpu: 20m, memory: 64Mi }
+          limits: { memory: 256Mi }
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      # The operator's CRDs are larger than the annotation client-side apply keeps.
+      - ServerSideApply=true

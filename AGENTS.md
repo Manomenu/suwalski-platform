@@ -13,7 +13,7 @@ terraform/
   platform/         Argo CD + aplikacja korzeniowa        (osobna konfiguracja główna)
   edge/             Cloudflare: tunel, DNS, Access        (osobna konfiguracja główna)
 argocd/
-  apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage)
+  apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage, cloudnative-pg, postgres)
   apps/projects/    Application'y projektów — po pliku na projekt i środowisko
   manifests/        manifesty elementów platformy: <element>/ — para z apps/platform/<element>.yaml
 justfile            tylko lista modułów
@@ -54,9 +54,11 @@ skrypt czyta i pisze tylko swoje; wspólne funkcje są w `scripts/.internal/lib.
 
 - **Terraform:** jedna konfiguracja główna na warstwę (`terraform/<warstwa>/`), z własnym
   stanem i modułem just o tej samej nazwie. Nowa warstwa = katalog + moduł + wiersz w README.
-- **Argo:** element platformy to zawsze **para** — `argocd/apps/platform/<element>.yaml`
-  i `argocd/manifests/<element>/`. Projekt to jeden plik w `apps/projects/` (chart leży
-  w repo projektu). `just check` pilnuje, żeby para była kompletna.
+- **Argo:** element platformy to plik `argocd/apps/platform/<element>.yaml` i jedno z dwóch:
+  własne manifesty w `argocd/manifests/<element>/` (para: `path`) albo gotowy chart upstream
+  w przypiętej wersji (`chart` + `targetRevision: X.Y.Z`) — wtedy bez katalogu manifestów.
+  Projekt to jeden plik w `apps/projects/` (chart leży w repo projektu). `just check`
+  pilnuje obu wariantów.
 - **Bash ma trzy miejsca, każde z jednym powodem:** `.just/lib/` — implementacja recept
   (wołana przez just i przez CI); `scripts/` — tylko to, czego just nie zrobi (`source`
   do powłoki, `setup.sh` przed instalacją just); `scripts/.internal/` — kroki i funkcje
@@ -76,7 +78,7 @@ zmiany: `just check` ma przejść. Formatowanie poprawia `just check fmt`.
 | bash | shellcheck, shfmt (`-i 4 -ci`) |
 | justfile i moduły | `just --fmt --check` |
 | YAML, manifesty, CI | yamllint (`.yamllint.yaml`), kubeconform `-strict` (także CRD Argo), actionlint |
-| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach |
+| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests albo chart w przypiętej wersji, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach |
 | sekrety | gitleaks na całej historii i na niezacommitowanych zmianach |
 
 `just check live` sprawdza żywe środowisko: plan każdej warstwy bez zmian (dryf = ktoś

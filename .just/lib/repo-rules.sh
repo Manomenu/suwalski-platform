@@ -42,10 +42,18 @@ for app in $(tracked 'argocd/apps/projects/*.yaml'); do
     [[ "$tag" =~ ^sha-[0-9a-f]{7,}$ ]] || broken "$app: image.tag is '$tag', expected one build: sha-<commit>"
 done
 
-# 3. A platform element is an Application in argocd/apps/platform/<name>.yaml whose
-#    manifests live in argocd/manifests/<name>/ — both or neither.
+# 3. A platform element is an Application in argocd/apps/platform/<name>.yaml and either
+#    - its manifests in argocd/manifests/<name>/ (path), or
+#    - an upstream Helm chart (chart) at a pinned version, and then no manifests directory.
 for app in $(tracked 'argocd/apps/platform/*.yaml'); do
     name="$(basename "$app" .yaml)"
+    chart="$(sed -n 's/^[[:space:]]*chart:[[:space:]]*//p' "$app")"
+    if [ -n "$chart" ]; then
+        version="$(sed -n 's/^[[:space:]]*targetRevision:[[:space:]]*\([^[:space:]#]*\).*/\1/p' "$app")"
+        [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || broken "$app: chart $chart at '$version', expected an exact version"
+        [ ! -d "argocd/manifests/$name" ] || broken "$app: installs a chart, yet argocd/manifests/$name exists"
+        continue
+    fi
     path="$(sed -n 's/^[[:space:]]*path:[[:space:]]*//p' "$app")"
     [ "$path" = "argocd/manifests/$name" ] || broken "$app: path is '$path', expected argocd/manifests/$name"
     [ -d "argocd/manifests/$name" ] || broken "$app: argocd/manifests/$name does not exist"
@@ -56,11 +64,11 @@ for dir in argocd/manifests/*/; do
 done
 
 # 4. The repo is public: no addresses of real people. Examples use example.com; git@github.com
-#    is an SSH remote, not a person.
+#    is an SSH remote and user@host.svc/.local/.internal a connection string, not a person.
 while IFS= read -r hit; do
     broken "$hit: an email address in a public repo (use name@example.com in examples)"
 done < <(tracked | xargs grep -nIoE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' |
-    grep -vE '@example\.(com|org)$|:git@github\.com$|noreply' || true)
+    grep -vE '@example\.(com|org)$|:git@github\.com$|noreply|\.(svc|local|internal)$' || true)
 
 # 5. Every just module in .just/ is mounted in the justfile — a module nobody mounts is dead.
 for module in $(tracked '.just/*.just'); do
