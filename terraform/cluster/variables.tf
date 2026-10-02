@@ -55,6 +55,18 @@ variable "file_datastore" {
   type        = string
 }
 
+# ── NAS: depends on the environment ──────────────────────────────────────────
+
+variable "nas_server" {
+  description = "Address of the NAS (OpenMediaVault) that exports the NFS share for VM disks. → proxmox.auto.tfvars"
+  type        = string
+}
+
+variable "nas_export" {
+  description = "NFS export on the NAS that Proxmox mounts as the 'nas' storage. → proxmox.auto.tfvars"
+  type        = string
+}
+
 # ── Network: depends on the environment ──────────────────────────────────────
 
 variable "network_bridge" {
@@ -133,6 +145,12 @@ variable "vm_disk_gb" {
   description = "Disk in GB. Holds the OS, container images and volumes created locally by the cluster."
   type        = number
   default     = 40
+}
+
+variable "nas_disk_gb" {
+  description = "Second disk of the machine, on the NAS: data that must not live on the host's NVMe (PostgreSQL, case files). Thin: takes only what is written. Growing it is changing this number."
+  type        = number
+  default     = 100
 }
 
 variable "debian_image_url" {

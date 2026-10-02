@@ -153,3 +153,115 @@ jak ten DNS i nginx są dziś naprawdę skonfigurowane.
 Na tym hypervisorze stoją rzeczy używane na co dzień. Przejęcie ich przez Terraform oznacza
 **import istniejącego stanu**, a nie postawienie od nowa obok — pomyłka tutaj kasuje NAS.
 To jest główny powód, dla którego to zadanie wymaga własnej sesji i spokoju.
+
+---
+
+## Jakość repo na poziomie automat-operat
+
+**Status:** zapisane, do osobnej sesji.
+
+W `automat-operat` jedno polecenie (`just check`, w CI ten sam skrypt) sprawdza wszystko,
+co da się sprawdzić bez ludzi. Tutaj każda warstwa ma tylko `just <warstwa> validate`
+(`fmt` + `validate`), skrypty i manifesty nie są sprawdzane wcale. Testów pisać nie musimy —
+chodzi o linty, sanity checki i to, czy całość „się kompiluje”.
+
+### Co powinien łapać `just check`
+
+| Obszar | Sprawdzenie | Bez dostępu do klastra? |
+| --- | --- | --- |
+| Terraform (wszystkie warstwy) | `tofu fmt -check`, `tofu validate`, tflint (z regułami providera) | tak |
+| Bash (`scripts/`, `.just/lib/`) | shellcheck, shfmt | tak |
+| just | `just --fmt --check --unstable` dla `justfile` i `.just/*.just` | tak |
+| Manifesty (`argocd/`) | kubeconform ze schematami (także CRD Application), yamllint | tak |
+| Reguły z AGENTS.md | skrypt: każda Application projektu ma finalizer, obrazy przypięte (bez `latest`), kod po angielsku tam, gdzie się da sprawdzić | tak |
+| Sekrety (repo publiczne!) | gitleaks na drzewie i historii: żadnych maili, tokenów, kluczy w śledzonych plikach | tak |
+| Plan | `tofu plan -detailed-exitcode` na każdej warstwie: „kod zgadza się z żywą infrastrukturą” | nie — osobno, np. `just check live` |
+
+Część offline może iść w CI na GitHubie (repo jest publiczne, więc bez sekretów w CI).
+
+### Struktura plików — czy nie robi się bałagan
+
+Przejrzeć tak, jak przejrzeliśmy frontend `automat-operat` (tam folder „na wszystko” `ui/`
+okazał się dwiema funkcjami). Pytania na start:
+
+- czy podział `scripts/` ↔ `.just/lib/` ↔ `scripts/.internal/` jest jasny, czy trzy miejsca
+  na bash to o dwa za dużo;
+- czy `argocd/manifests/<element>/` + `argocd/apps/platform/<element>.yaml` dla każdego
+  elementu platformy (cloudflared, nas-storage, wkrótce postgres) nie powinny leżeć razem;
+- `kubeconfig` w katalogu głównym repo;
+- czy rzeczy robione ręcznie poza kodem (OMV, kolejność startu VM 113 — `docs/nas.md`)
+  da się opisać kodem, czy wystarczy je jasno wypisać.
+
+Wynik: plan lepszego podziału (jeśli potrzebny) i dopisane zasady w AGENTS.md, tak jak
+sekcja „Web app layout” w `automat-operat/CLAUDE.md`.
+
+---
+
+## OpenMediaVault opisany kodem — i stały adres NAS-a
+
+**Status:** zapisane. **Część o adresie jest pilna** (niżej).
+
+Dziś OMV (VM 113) i jego ustawienia są klikane albo wołane ręcznie przez `omv-rpc`; to, co
+zrobiliśmy dla klasy „nas”, opisuje `docs/nas.md`. Cel: odtworzenie NAS-a z repo, tak jak
+maszyny k3s.
+
+### Pilne: OMV ma adres z DHCP
+
+OMV bierze adres z routera (`method: dhcp`, dziś `192.168.0.197`; wcześniejsza notatka
+mówiła `.198`, więc adres już się kiedyś zmienił). Od tego adresu zależą:
+
+- magazyn Proxmoksa `nas` (`nas_server` w `terraform/cluster/proxmox.auto.tfvars`) — czyli
+  **dysk z bazą** maszyny k3s;
+- montowanie SMB na hoście Proxmoksa (`/etc/fstab` → `/mnt/nas-maniumek`) — czyli Jellyfin;
+- każde ręczne połączenie po SMB z laptopa.
+
+Gdy router da OMV inny adres (np. po dłuższym wyłączeniu), wszystko to przestaje działać.
+
+**Przyjęty standard w tym repo:** usługi, od których coś zależy, mają **stały adres**.
+Maszyna k3s dostaje go w Terraformie (`vm_ip`, przez cloud-init — z komentarzem, dlaczego
+nie DHCP). Dla OMV są dwie poprawne drogi:
+
+| Droga | Jak | Uwagi |
+| --- | --- | --- |
+| **Rezerwacja DHCP w routerze** | adres na sztywno dla MAC `BC:24:11:A7:C0:09` (karta VM 113) | nic nie zmienia w OMV; router zostaje jedynym źródłem adresów; ręcznie w routerze |
+| **Stały adres w OMV** | Network → ens18 → static `192.168.0.197/24`, brama `.1`, DNS | adres opisany przy NAS-ie; trzeba wybrać adres spoza puli DHCP routera, żeby nie było kolizji |
+
+Do tego **nazwa zamiast adresu**: wpis w AdGuardzie (np. `nas.suwalski.internal` →
+`192.168.0.197`). Wtedy SMB z laptopa (`\\nas.suwalski.internal\maniumek`) i `nas_server`
+w Terraformie używają nazwy, a zmiana adresu to jedna poprawka w DNS. Uwaga: Proxmox musi
+umieć tę nazwę rozwiązać (DNS hosta wskazuje na AdGuarda albo wpis w `/etc/hosts`).
+
+### Właściwe zadanie: OMV w kodzie, bez utraty danych
+
+Dwie różne rzeczy, dwa narzędzia — to typowy podział: Terraform opisuje **maszyny**, a
+konfigurację **wewnątrz** systemu opisuje narzędzie do konfiguracji (Ansible) albo skrypt.
+
+1. **Maszyna VM 113 w Terraformie** — przez `import` (blok `import` w OpenTofu), nie przez
+   tworzenie od nowa. Import niczego nie zmienia na serwerze: dopisuje istniejącą maszynę
+   do stanu. Kolejność bezpieczna dla danych:
+   - napisać zasób tak, by odpowiadał obecnej konfiguracji (`qm config 113`), w tym
+     `hostpci0` (kontroler SATA z dyskami RAID), `startup order=1,up=60`, `onboot`;
+   - `tofu plan` ma pokazać **„1 to import, 0 to change, 0 to destroy”** — dopiero wtedy
+     `apply`. Cokolwiek w „replace/destroy” = stop;
+   - dyski danych (SSD w RAID1) **nie są dyskami Proxmoksa** — są na przekazanym
+     kontrolerze, więc Terraform ich nie zna i nie może ich skasować. Ryzyko dotyczy tylko
+     dysku systemowego OMV (20 GB na `local-lvm`) — przed importem kopia (`vzdump 113`)
+     i eksport konfiguracji OMV (Backup / `omv-confdbadm`).
+2. **Ustawienia OMV** (foldery współdzielone, NFS, SMB, użytkownicy, sieć) — dojrzałego
+   providera Terraform dla OMV nie ma. Kandydaci:
+   - **Ansible** z modułami/`omv-rpc` — idempotentne, czytelne, standard dla „konfiguracji
+     wewnątrz maszyny”; dochodzi nowe narzędzie;
+   - **skrypt `omv-rpc` w `.just/lib/`** (jak `nas-disk.sh`) — bez nowych narzędzi, ale
+     idempotentność trzeba pilnować samemu;
+   - zostawić ręcznie, ale **kopię konfiguracji OMV** trzymać poza serwerem i opis
+     w `docs/nas.md` aktualny.
+   Macierz RAID i system plików btrfs zostają ręczne w każdym wariancie — ich odtworzenie
+   „z kodu” to formatowanie dysków z danymi.
+
+### Do rozstrzygnięcia
+
+- rezerwacja w routerze czy stały adres w OMV (i czy router ma API, żeby to też było kodem);
+- Ansible czy skrypt — zależy, ile jeszcze maszyn poza k3s dojdzie (AdGuard, Jellyfin,
+  tailscale też są dziś klikane);
+- czy przy okazji przejść z montowania SMB na hoście (Jellyfin) na NFS — stabilniejsze dla
+  Linuxa niż `cifs ... soft`.
