@@ -24,12 +24,16 @@ macierzy OpenMediaVault. Droga od fizycznych dysków do wolumenu w Kubernetesie:
 | klasa storage `nas` | Argo: `argocd/apps/platform/nas-storage.yaml` |
 | folder `proxmox` i eksport NFS w OMV | **ręcznie**, opis niżej — OMV nie jest zarządzany kodem |
 | kolejność startu OMV (`order=1,up=60`) | **ręcznie**: `ssh pve 'qm set 113 --startup order=1,up=60'` — VM 113 nie jest w Terraformie |
+| stały adres OMV `192.168.0.197` | **ręcznie** w OMV (Network → ens18 → static), DNS `192.168.0.115` (AdGuard), `1.1.1.1` |
 
 ## Ustawienia OMV (zrobione 2.10.2026 przez `omv-rpc`)
 
 - Folder współdzielony `proxmox` na `/dev/md0`, uprawnienia 700.
 - `chattr +C` na katalogu folderu: obrazy dysków na btrfs bez copy-on-write, inaczej każdy
   zapis maszyny fragmentuje plik. Pliki tworzone w środku dziedziczą atrybut.
+- Stały adres `192.168.0.197/24`, brama `192.168.0.1` (wcześniej DHCP — od tego adresu
+  zależą magazyn `nas` i montowanie SMB dla Jellyfina). Router nadal może mieć `.197`
+  w puli DHCP: rezerwacja albo wyłączenie tego adresu z puli zapobiega kolizji.
 - NFS włączony (wersje 3, 4, 4.1, 4.2). Udział: klient `192.168.0.111/32`, `rw`,
   dodatkowo `sync,no_subtree_check,no_root_squash` — Proxmox zapisuje obrazy jako root.
 

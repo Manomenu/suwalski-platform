@@ -199,13 +199,14 @@ sekcja „Web app layout” w `automat-operat/CLAUDE.md`.
 
 ## OpenMediaVault opisany kodem — i stały adres NAS-a
 
-**Status:** zapisane. **Część o adresie jest pilna** (niżej).
+**Status:** zapisane. Adres: **stały `192.168.0.197` ustawiony w OMV 2.10.2026**; zostało
+zarezerwować go w routerze (albo wyjąć z puli DHCP), żeby router nie dał go komuś innemu.
 
 Dziś OMV (VM 113) i jego ustawienia są klikane albo wołane ręcznie przez `omv-rpc`; to, co
 zrobiliśmy dla klasy „nas”, opisuje `docs/nas.md`. Cel: odtworzenie NAS-a z repo, tak jak
 maszyny k3s.
 
-### Pilne: OMV ma adres z DHCP
+### Adres OMV (rozwiązane w OMV, router do dokończenia)
 
 OMV bierze adres z routera (`method: dhcp`, dziś `192.168.0.197`; wcześniejsza notatka
 mówiła `.198`, więc adres już się kiedyś zmienił). Od tego adresu zależą:
