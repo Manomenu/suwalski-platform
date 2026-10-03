@@ -1,8 +1,8 @@
-# Terraform state describes live infrastructure and contains values we do not want
-# to publish. The provider lockfile is the opposite — it must be committed, because it is
-# what guarantees everyone gets the same version.
+# Terraform state is encrypted (terraform/*/encryption.tf) and committed: the record of what
+# Terraform built must survive this laptop. `just check` refuses a plain one. The automatic
+# .backup copies stay out. The provider lockfile must be committed too — it is what
+# guarantees everyone gets the same version.
 **/.terraform/
-*.tfstate
 *.tfstate.*
 crash.log
 crash.*.log

@@ -7,7 +7,10 @@ zapisujemy tylko, o co chodziło i dlaczego, żeby pomysł nie zginął.
 
 ## Sekrety bez ręcznego zarządzania
 
-**Status:** zapisane. Obecne rozwiązanie jest **świadomie przejściowe**.
+**Status:** w dużej mierze zastąpione przez `just secrets backup|restore` (kopia `.secrets/`
+w Bitwardenie) — największy problem, czyli „gdzie trzymać sekrety, żeby przetrwały utratę
+laptopa”, jest rozwiązany. Wracać tu dopiero, gdy ręczne `setup.sh` zacznie męczyć albo
+pojawi się druga osoba.
 
 Dziś sekrety leżą otwartym tekstem w `.secrets/` (poza gitem, po pliku na zakres), a skrypty `setup.sh`
 rozprowadza je stamtąd do `terraform/cluster/secrets.auto.tfvars` i do Secretów
@@ -267,3 +270,135 @@ odpowiedniki „martwego kodu” i kilka reguł o tym, kto czego dotyka.
 - Warstwy Terraformu nie czytają nawzajem swojego stanu (`terraform_remote_state`); wartości
   między warstwami przenoszą skrypty z wyjść (jak AUD do ConfigMapy) — dziś tak jest, reguła by
   tego pilnowała.
+
+---
+
+## Mocniejsza bramka: parametry projektów i manifesty
+
+**Status:** zapisane.
+
+### Parametry projektów względem ich chartów
+
+Pliki w `argocd/apps/projects/` podają chartom projektów wartości (`server.databaseSecret`,
+`server.accessConfigMap`, `ingress.host`, `image.pullSecret`…), ale nikt nie sprawdza, czy chart
+je zna — Helm po cichu ignoruje nieznany klucz, więc literówka wychodzi dopiero na klastrze
+(np. serwer bez bazy). `just check` mógłby:
+
+- pobrać chart projektu w tej wersji, którą wskazuje Application (`targetRevision`),
+- wyrenderować go z parametrami z pliku aplikacji (`helm template … --set …`),
+- sprawdzić, że każdy parametr istnieje w `values.yaml` charta, a wynik przepuścić przez kubeconform.
+
+W CI potrzebny jest dostęp tylko do odczytu do prywatnego `automat-operat` (osobny deploy key
+jako sekret Actions) — albo krok tylko lokalny (`just check live`).
+
+### Lint bezpieczeństwa i niezawodności manifestów
+
+Odpowiednik „strict” dla YAML-i (kube-linter albo podobny), na manifestach z `argocd/manifests/`
+i wyrenderowanych chartach projektów: limity pamięci, `runAsNonRoot`, brak trybu
+uprzywilejowanego, sondy zdrowia, przypięte obrazy. Część wyjątków będzie uzasadniona (np.
+provisioner `nas` potrzebuje dostępu do ścieżek hosta) — zapisywane przy manifeście, nie globalnie.
+
+---
+
+## NetworkPolicy: kto może się łączyć z czym
+
+**Status:** zapisane.
+
+Dziś każdy pod w klastrze może połączyć się z każdym. Dla bazy to za dużo: do `postgres`
+powinny mieć dostęp tylko namespace'y projektów, które mają w niej bazę, i operator
+CloudNativePG (`cnpg-system`). k3s egzekwuje NetworkPolicy od ręki. Zacząć od bazy; potem
+ewentualnie „domyślnie nic” w namespace'ach projektów z wyjątkami (Traefik → web, web → server,
+server → baza, server → Gotenberg).
+
+---
+
+## Próba odtworzenia środowiska od zera
+
+**Status:** zapisane; wymaga drugiej maszyny albo okna przestoju — dziś nie do zrobienia.
+
+Cel: dowód, że z repo, sekretów (`.secrets/`, hasło stanu) i kopii zapasowych da się postawić
+wszystko na czystym sprzęcie — i spisana instrukcja awaryjna. Wychodzą przy tym rzeczy „zrobione
+kiedyś ręcznie”.
+
+**Dlaczego to nie jest proste:** środowisko stoi na OpenMediaVault na tym samym serwerze — od
+niego zależy dysk z bazą (`docs/nas.md`). OMV i jego konfiguracja nie są opisane kodem (osobny
+punkt „OpenMediaVault opisany kodem”), a dobrego providera Terraform dla OMV nie ma: maszynę da
+się zaimportować do Terraformu, ale ustawienia w środku (udziały, NFS, SMB) wymagałyby Ansible
+albo skryptu `omv-rpc`. Do tego dysk `nas` żyje razem z maszyną k3s — postawienie jej od nowa
+na tym samym serwerze usuwa dane bazy, więc bez kopii poza domem (etap 6 planu draftów) próba
+jest niebezpieczna.
+
+Kolejność, gdy przyjdzie czas: kopie poza domem → OMV opisany kodem → próba na drugiej maszynie
+(albo w zaplanowanym oknie: odtworzenie samej maszyny k3s i bazy z kopii).
+
+---
+
+## Menedżer haseł: Bitwarden
+
+**Status:** do zrobienia przez właściciela, poza repo — ale repo od tego zależy.
+
+Część rzeczy potrzebnych do odtworzenia środowiska istnieje dziś tylko na tym laptopie albo
+w notatkach otwartym tekstem. Bez kopii w menedżerze haseł utrata laptopa zabiera je na zawsze:
+
+- **`STATE_PASSPHRASE`** z `.secrets/platform.env` — bez niego zaszyfrowany stan Terraformu
+  w gicie jest bezużyteczny. **Najpilniejsze.**
+- reszta `.secrets/*.env`: token API Proxmoksa, token Cloudflare, token GHCR projektów, listy
+  maili grup Access;
+- hasła OpenMediaVault (panel, root, SMB) — dziś w notatce otwartym tekstem i jedno hasło do
+  wszystkiego; przy okazji: zmienić na osobne, mocne;
+- kody odzyskiwania kont: GitHub, Cloudflare, Google (logowanie do automatu), Backblaze/Hetzner
+  (gdy dojdą kopie zapasowe).
+
+**Uwaga:** Bitwarden w chmurze, nie samodzielnie hostowany (Vaultwarden) na tym serwerze —
+menedżer haseł, który pada razem z homelabem, nie pomoże go odtworzyć.
+
+**Zrobione w repo:** `just secrets backup` wrzuca każdy `.secrets/*.env` do Bitwardena (folder
+Homelab, notatka `suwalski-platform/.secrets/<plik>`), `just secrets restore` sprowadza je na
+nowej maszynie. Zostaje po stronie właściciela: `bw config server https://vault.bitwarden.eu`,
+`bw login`, pierwszy `just secrets backup` i sprawdzian niżej.
+
+---
+
+## Nowe, osobne hasła OpenMediaVault
+
+**Status:** do zrobienia przez właściciela (po założeniu Bitwardena — punkt wyżej).
+
+Dziś panel OMV, konto `root` i użytkownik SMB `maniumek` mają **jedno wspólne hasło**, zapisane
+otwartym tekstem w notatce (i wklejone kiedyś do rozmowy z agentem). Zmiana na trzy osobne,
+wygenerowane w Bitwardenie (generator → „Password”, 24 znaki):
+
+1. W sejfie trzy wpisy: *OMV panel (admin)*, *OMV root (konsola)*, *OMV SMB (maniumek)*;
+   pole URL: `http://192.168.0.197`.
+2. Zmiana w OMV: panel → *User settings* (admin) i *Users* (maniumek — to hasło SMB);
+   `root` przez konsolę (`passwd`).
+3. **Hasło SMB jest też na Proxmoksie:** `/etc/nas-credentials` (montowanie
+   `/mnt/nas-maniumek` dla Jellyfina). Po zmianie: nowe hasło w tym pliku, potem
+   `umount /mnt/nas-maniumek && mount /mnt/nas-maniumek` i sprawdzenie, że Jellyfin widzi filmy.
+   Agent może to zrobić — wystarczy powiedzieć.
+4. Inne miejsca, które łączą się po SMB jako `maniumek` (laptop, telefon) — zaktualizować.
+5. Usunąć starą notatkę z hasłami otwartym tekstem.
+
+---
+
+## Kody odzyskiwania kont i sprawdzian sejfu
+
+**Status:** do zrobienia przez właściciela (po założeniu Bitwardena i przeniesieniu sekretów).
+
+### Kody odzyskiwania
+
+Każde konto z 2FA ma kody na wypadek utraty telefonu. W Bitwardenie jako *Secure Note*, po jednej
+na konto:
+
+- **GitHub** (repo, obrazy, CI): Settings → Password and authentication → Recovery codes.
+- **Cloudflare** (domena, tunel, logowanie do automatu): My Profile → Authentication → Backup codes.
+- **Google** (konto, przez które idą kody logowania): myaccount.google.com →
+  Security → Backup codes.
+- **Proxmox:** hasło roota hosta (web UI) — jeśli nie ma go jeszcze nigdzie poza głową.
+
+### Sprawdzian
+
+1. Wylogować się z sejfu na laptopie i zalogować z **kartki awaryjnej** (hasło główne + kod
+   z aplikacji 2FA). Działa = kartka jest dobra.
+2. Na telefonie znaleźć „hasło stanu Terraform” — to ono jest najważniejsze.
+3. Dać znać agentowi: odhaczy punkt „Menedżer haseł: Bitwarden” i dopisze do README, gdzie
+   szukać sekretów przy odtwarzaniu środowiska.

@@ -66,6 +66,11 @@ gave it last time. Secrets live in `.secrets/` at the root, outside git, one fil
 scope; the copies it generates are never edited by hand. That script covers the platform
 only — each project has its own under `scripts/projects/` (see below).
 
+`.secrets/` is the one thing a lost laptop takes with it, so keep a copy in Bitwarden:
+`just secrets backup` after a run that changed something. On a new machine,
+`just secrets restore` brings the files back, and `./scripts/setup.sh` takes it from there.
+The `bw` CLI must be logged in once: `bw config server https://vault.bitwarden.eu && bw login`.
+
 **3. Describe your environment.** This part is *not* secret and is committed on purpose —
 it is a description of where things stand, not a personal setting:
 
@@ -159,6 +164,8 @@ Type `just` to see the modules, `just <module>` to see what each one can do.
 | `just check` | The quality gate — formats, lints, schemas, repo rules, secrets. CI runs exactly this on every push |
 | `just check live` | Does every layer's plan match the real environment, is every Argo app synced and healthy |
 | `just check fmt` | Apply the formatters the gate checks |
+| `just secrets backup` | Copy every `.secrets/*.env` into Bitwarden (folder Homelab, one Secure Note per file) |
+| `just secrets restore [--force]` | New machine: Bitwarden → `.secrets/`. A file that differs is kept unless `--force` |
 | `just argo password` | Argo CD's initial admin password, decoded |
 | `just argo apps` | Every application: in sync with git? healthy? |
 | `just argo refresh [app]` | Make Argo CD check git now instead of within ~3 minutes |

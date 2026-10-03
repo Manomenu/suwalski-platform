@@ -50,6 +50,28 @@ kto może wejść na jego adres, hasła aplikacji — ma skrypt w
 `scripts/projects/<projekt>/[<środowisko>/]setup.sh` i własny plik w `.secrets/`. Każdy
 skrypt czyta i pisze tylko swoje; wspólne funkcje są w `scripts/.internal/lib.sh`.
 
+**Kopia `.secrets/` żyje w Bitwardenie** (`just secrets backup` / `restore`, po notatce na plik
+`*.env`). Źródłem prawdy pozostaje `.secrets/` — skrypty `setup.sh` niczego z Bitwardena nie
+czytają. Klucz deploy (`deploy-key`) celowo nie jedzie: zgubiony generuje się na nowo.
+Wartości nie trafiają na ekran ani do argumentów poleceń — tylko przez potoki i pliki.
+
+**Nowa zmienna — po kolei:**
+
+1. **Czy to w ogóle sekret?** Adres, nazwa, port, lista domen — nie. Taka wartość idzie jawnie:
+   do `values.yaml` charta, ConfigMapy albo `*.tfvars` w gicie. Sekret to coś, co daje dostęp
+   (hasło, token, klucz) albo dane osobowe (maile grup Access).
+2. **Czyj?** Platformy → `scripts/setup.sh` i `.secrets/platform.env`. Projektu →
+   `scripts/projects/<projekt>/[<środowisko>/]setup.sh` i jego plik w `.secrets/`. Nowy plik
+   w `.secrets/` ma rozszerzenie `.env` — inaczej backup go pominie.
+3. **Wpisany raz, ręcznie, przez `ask`** (z `scripts/.internal/lib.sh`, sekret z `silent`),
+   zapisany przez `save_source`. Wartość, którą da się wygenerować, dostaje propozycję
+   (`openssl rand …`) jako domyślną. Wszystko dalej — `secrets.auto.tfvars`, Secret w klastrze —
+   skrypt wylicza z `.secrets/`; tych kopii nikt nie edytuje.
+4. **Zakończ zmianę zdaniem do właściciela:** „uruchom `<setup.sh>`, potem
+   `just secrets backup`”. Agent nie loguje się do Bitwardena i nie odpala backupu sam.
+5. Sekret, który **łatwiej odtworzyć niż przechować** (klucz deploy, token do wygenerowania
+   jednym kliknięciem), może leżeć poza `*.env` — ale wtedy opisz w skrypcie, jak go odtworzyć.
+
 ### Gdzie co leży — zasady, które trzymają układ
 
 - **Terraform:** jedna konfiguracja główna na warstwę (`terraform/<warstwa>/`), z własnym
@@ -161,8 +183,11 @@ zaczniesz cokolwiek kopiować, bo wybór podejścia decyduje o tym, czy wydziela
   `apply`, a do tego czasu kod będzie kłamał o stanie środowiska.
 - **Wersje są przypięte** — k3s, provider, obraz systemu. Środowisko odtwarzalne bije
   środowisko zawsze najnowsze.
-- **`.terraform.lock.hcl` commitujemy**, `*.tfstate` nie. Lockfile jest kontrolowany
-  ręcznie; stan jest generowany i opisuje żywą infrastrukturę.
+- **`.terraform.lock.hcl` i `terraform.tfstate` commitujemy — stan wyłącznie zaszyfrowany.**
+  Lockfile jest kontrolowany ręcznie. Stan opisuje żywą infrastrukturę i zawiera tokeny, więc
+  OpenTofu szyfruje go przed zapisem (`terraform/*/encryption.tf`, hasło `STATE_PASSPHRASE`
+  z `.secrets/platform.env`); `just check` odrzuca niezaszyfrowany. Bez hasła stan w gicie jest
+  bezużyteczny — jego kopia leży w Bitwardenie (`just secrets backup`).
 - **Każda Application projektu (`argocd/apps/projects/`) ma finalizer**
   `resources-finalizer.argocd.argoproj.io` w `metadata.finalizers`. Root app prunuje
   Application, której pliku już nie ma w gicie — ale bez finalizera Argo usuwa sam obiekt
