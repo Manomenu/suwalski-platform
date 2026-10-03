@@ -237,3 +237,33 @@ konfigurację **wewnątrz** systemu opisuje narzędzie do konfiguracji (Ansible)
   tailscale też są dziś klikane);
 - czy przy okazji przejść z montowania SMB na hoście (Jellyfin) na NFS — stabilniejsze dla
   Linuxa niż `cifs ... soft`.
+
+---
+
+## Martwy kod i „kontrakty” w platformie
+
+**Status:** zapisane. Odpowiednik tego, co `automat-operat` ma od 3.10.2026 (knip, kontrakty
+importów). Tu nie ma modułów, które importują się nawzajem, więc kontrakty importów w tamtej
+postaci nie mają do czego się stosować — ich rolę pełnią już reguły w `.just/lib/repo-rules.sh`
+(pary `apps/platform` ↔ `manifests`, moduły podpięte w justfile, finalizery). Zostają
+odpowiedniki „martwego kodu” i kilka reguł o tym, kto czego dotyka.
+
+### Martwy kod — do dopisania w `repo-rules.sh`
+
+- **Funkcje w `scripts/.internal/lib.sh`, których nikt nie woła** (np. po usunięciu
+  `migrate_old_env` nikt by nie zauważył, gdyby wywołania zostały, a funkcja nie — albo odwrotnie).
+- **Skrypty w `.just/lib/`, do których nie odwołuje się żadna recepta ani workflow.**
+- **Wyjścia Terraformu, których nic nie czyta** (żaden skrypt, recepta, dokument) — tak
+  przetrwało wyjście `haslo`. Nieużywane zmienne łapie już tflint.
+- **Klucze w plikach `.secrets/*.env`, których żaden `setup.sh` nie czyta** — sprawdzalne tylko
+  lokalnie (pliki poza gitem), więc jako ostrzeżenie w `just check live`, nie w CI.
+
+### Kto czego dotyka
+
+- `scripts/projects/<projekt>/…` pisze tylko do `.secrets/<projekt>[-<środowisko>].env`
+  i do grup Access swojego projektu — nigdy do plików innego projektu ani platformy.
+- Recepty w `.just/*.just` wołają tylko `.just/lib/` (nie `scripts/.internal/`, które należą
+  do `setup.sh`).
+- Warstwy Terraformu nie czytają nawzajem swojego stanu (`terraform_remote_state`); wartości
+  między warstwami przenoszą skrypty z wyjść (jak AUD do ConfigMapy) — dziś tak jest, reguła by
+  tego pilnowała.
