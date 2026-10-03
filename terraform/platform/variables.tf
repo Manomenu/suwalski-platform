@@ -41,3 +41,14 @@ variable "platform_repo_revision" {
   type        = string
   default     = "master"
 }
+
+variable "state_passphrase" {
+  description = "Encrypts the state (encryption.tf). → secrets.auto.tfvars, from STATE_PASSPHRASE in .secrets/platform.env"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.state_passphrase) >= 16
+    error_message = "state_passphrase must be at least 16 characters (pbkdf2 requirement)."
+  }
+}

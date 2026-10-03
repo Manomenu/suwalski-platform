@@ -78,10 +78,17 @@ done
 # 6. Scripts run directly are executable and stop on the first error. Sourced scripts are
 #    exempt: `set -e` in them would change the caller's shell.
 SOURCED=(scripts/.internal/lib.sh scripts/cluster/kubectl-setup.sh)
-for script in $(tracked '*.sh'); do
+for script in $(tracked '*.sh' '.githooks/*'); do
     if [[ " ${SOURCED[*]} " == *" $script "* ]]; then continue; fi
     [ -x "$script" ] || broken "$script: not executable (chmod +x)"
     grep -q '^set -euo pipefail' "$script" || broken "$script: no 'set -euo pipefail'"
+done
+
+# 7. Terraform state is committed only encrypted (encryption.tf): it holds tokens and the
+#    whole environment, and this repo is public.
+for state in $(tracked '*.tfstate'); do
+    python3 -c 'import json, sys; d = json.load(open(sys.argv[1])); sys.exit(0 if "encrypted_data" in d and "resources" not in d else 1)' "$state" ||
+        broken "$state: not encrypted — run any tofu plan/apply in its layer with encryption.tf in place"
 done
 
 if [ "$BROKEN" -eq 0 ]; then echo "  all rules hold"; fi

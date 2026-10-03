@@ -31,6 +31,10 @@ mod edge '.just/edge.just'
 [group('quality')]
 mod check '.just/check.just'
 
+[doc('Copy of .secrets/ in Bitwarden: `just secrets backup`, `just secrets restore`')]
+[group('operations')]
+mod secrets '.just/secrets.just'
+
 [doc('Argo CD: password and application status')]
 [group('operations')]
 mod argo '.just/argo.just'

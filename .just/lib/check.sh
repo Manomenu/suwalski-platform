@@ -88,13 +88,13 @@ tflint_layers() {
 bash_lint() {
     require shellcheck || return 1
     # -x follows `source`, so functions from scripts/.internal/lib.sh are known.
-    (cd "$ROOT" && tracked '*.sh' | xargs shellcheck -x)
+    (cd "$ROOT" && tracked '*.sh' '.githooks/*' | xargs shellcheck -x)
 }
 
 bash_format() {
     require shfmt || return 1
     # 4 spaces, indented case branches — the style the scripts are written in.
-    (cd "$ROOT" && tracked '*.sh' | xargs shfmt -i 4 -ci -d)
+    (cd "$ROOT" && tracked '*.sh' '.githooks/*' | xargs shfmt -i 4 -ci -d)
 }
 
 just_format() {
@@ -198,7 +198,7 @@ case "${1:-offline}" in
         ;;
     fmt)
         tofu fmt -recursive "$ROOT/terraform"
-        (cd "$ROOT" && tracked '*.sh' | xargs shfmt -i 4 -ci -w)
+        (cd "$ROOT" && tracked '*.sh' '.githooks/*' | xargs shfmt -i 4 -ci -w)
         for file in $(cd "$ROOT" && tracked justfile '.just/*.just'); do
             just --unstable --fmt --quiet --justfile "$ROOT/$file"
         done
