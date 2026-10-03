@@ -59,10 +59,19 @@ tofu_validate() {
     local layer status=0
     for layer in "${LAYERS[@]}"; do
         local dir="$ROOT/terraform/$layer"
-        # validate needs the providers' schemas. -backend=false: no state is read, and the
-        # lockfile stays as committed.
+        # validate needs the providers' schemas, and the lockfile stays as committed. init runs
+        # in a copy without terraform.tfstate: even with -backend=false it reads the state, and
+        # the committed one is encrypted (CI has no passphrase, and validate needs none).
         if [ ! -d "$dir/.terraform" ]; then
-            tofu -chdir="$dir" init -backend=false -input=false -lockfile=readonly >/dev/null || status=1
+            local tmp
+            tmp="$(mktemp -d)"
+            cp "$dir"/*.tf "$dir/.terraform.lock.hcl" "$tmp/"
+            if tofu -chdir="$tmp" init -backend=false -input=false -lockfile=readonly >/dev/null; then
+                mv "$tmp/.terraform" "$dir/.terraform"
+            else
+                status=1
+            fi
+            rm -rf "$tmp"
         fi
         local out
         if out="$(tofu -chdir="$dir" validate -no-color 2>&1)"; then
