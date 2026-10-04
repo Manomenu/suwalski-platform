@@ -1,0 +1,29 @@
+# Gatus — status checks of the platform and the projects, with alerts to Discord.
+#
+# Manifests in THIS repo (argocd/manifests/gatus/), like cloudflared: a piece of the platform,
+# not our code. What is checked, and which environment alerts, is config.yaml there.
+# The Discord webhook is NOT in git: the gatus-discord Secret comes from scripts/setup.sh.
+# Status page: http://gatus.k8s.suwalski.internal (home network).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gatus
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/gatus
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gatus
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

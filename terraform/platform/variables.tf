@@ -22,12 +22,6 @@ variable "enable_dex" {
   default     = false
 }
 
-variable "enable_notifications" {
-  description = "Notifications about deployment results. We will enable them once there is somewhere to send them."
-  type        = bool
-  default     = false
-}
-
 # ── Root application ──────────────────────────────────────────────────────────
 
 variable "platform_repo_url" {
