@@ -2,16 +2,33 @@
 # (including a red smoke test: a failed PostSync hook fails the whole sync), an application
 # turned Degraded, and a deployment succeeded.
 #
-# What sends: this file (one Discord channel, the messages, the triggers). WHICH environment
-# sends: annotations on its Application in argocd/apps/projects/ —
-#   notifications.argoproj.io/subscribe.<trigger>.discord: ""
-# An environment without them is silent. The webhook URL is not here: the
-# argocd-notifications-secret Secret comes from scripts/setup.sh (DISCORD_WEBHOOK_URL).
+# One Argo service per Discord channel, named after it: discord-<channel>. WHICH event goes to
+# which channel is decided by annotations on each Application —
+#   notifications.argoproj.io/subscribe.<trigger>.discord-<channel>: ""
+# (failures to the environment's own channel, "deployed" to #suw-platf-deployments-notif); an
+# Application without them is silent. The webhook URLs are not here: they are keys
+# discord-<channel> of the argocd-notifications-secret Secret, each written by the setup.sh that
+# owns the channel (scripts/.internal/lib.sh, discord_channel).
 
 locals {
-  # A message is one Discord "content" string, built with printf and escaped by toJson — an
-  # error message from Kubernetes can carry quotes and newlines that would break plain JSON.
-  discord_message = "webhook:\n  discord:\n    method: POST\n    body: |\n      {\"content\": {{ printf %s | toJson }}}\n"
+  discord_channels = [
+    "suw-platf-notif",
+    "suw-platf-deployments-notif",
+    "app-automat-operat-notif",
+    "app-automat-operat-dev-notif",
+    "app-grzyby-notif",
+  ]
+
+  # The text of each message, as a Go template. printf builds one Discord "content" string and
+  # toJson escapes it — an error message from Kubernetes can carry quotes and newlines that
+  # would break plain JSON.
+  messages = {
+    "app-sync-failed"     = "printf \":x: **%s** — wdrożenie nieudane (%s)\\n%s\\n%s/applications/%s\" .app.metadata.name .app.status.operationState.phase .app.status.operationState.message .context.argocdUrl .app.metadata.name"
+    "app-health-degraded" = "printf \":warning: **%s** — aplikacja w stanie Degraded\\n%s/applications/%s\" .app.metadata.name .context.argocdUrl .app.metadata.name"
+    # Only the version: every image of a project carries the same sha-<commit> tag, and the
+    # pinned third-party ones (curl, Gotenberg) would only be noise.
+    "app-deployed" = "printf \":white_check_mark: **%s** — wdrożono %s\" .app.metadata.name (regexFind \"sha-[0-9a-f]+\" (join \" \" .app.status.summary.images) | default \"nową wersję\")"
+  }
 
   notifications = {
     enabled = true
@@ -19,26 +36,30 @@ locals {
     # Links in the messages point here (home network).
     argocdUrl = "http://${var.argocd_host}"
 
-    # The Secret holding the webhook URL is created by scripts/setup.sh, not by the chart:
-    # Terraform never sees the value.
+    # The Secret holding the webhook URLs is written by the setup.sh scripts, not by the chart:
+    # Terraform never sees the values.
     secret = { create = false }
 
     notifiers = {
-      "service.webhook.discord" = <<-EOT
-        url: $discord-webhook-url
+      for channel in local.discord_channels : "service.webhook.discord-${channel}" => <<-EOT
+        url: $discord-${channel}
         headers:
           - name: Content-Type
             value: application/json
       EOT
     }
 
+    # A webhook template names the service it goes through, so every message has a variant for
+    # every channel; the annotation picks the channel.
     templates = {
-      "template.app-sync-failed" = format(local.discord_message,
-      "\":x: **%s** — wdrożenie nieudane (%s)\\n%s\\n%s/applications/%s\" .app.metadata.name .app.status.operationState.phase .app.status.operationState.message .context.argocdUrl .app.metadata.name")
-      "template.app-health-degraded" = format(local.discord_message,
-      "\":warning: **%s** — aplikacja w stanie Degraded\\n%s/applications/%s\" .app.metadata.name .context.argocdUrl .app.metadata.name")
-      "template.app-deployed" = format(local.discord_message,
-      "\":white_check_mark: **%s** — wdrożono %s\" .app.metadata.name (join \", \" .app.status.summary.images)")
+      for name, message in local.messages : "template.${name}" => yamlencode({
+        webhook = {
+          for channel in local.discord_channels : "discord-${channel}" => {
+            method = "POST"
+            body   = "{\"content\": {{ ${message} | toJson }}}"
+          }
+        }
+      })
     }
 
     triggers = {
@@ -50,10 +71,12 @@ locals {
         - when: app.status.health.status == 'Degraded'
           send: [app-health-degraded]
       EOT
-      # Once per deployed revision: after the sync and its smoke test went through, healthy.
+      # Once per set of images: a deployment here is a new image tag set in the platform repo,
+      # while the chart's git revision stays the same — and a code commit that changes nothing
+      # in the cluster moves the revision without deploying anything.
       "trigger.on-deployed" = <<-EOT
         - when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
-          oncePer: app.status.operationState.syncResult.revision
+          oncePer: join(app.status.summary.images, ",")
           send: [app-deployed]
       EOT
     }

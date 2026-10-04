@@ -39,8 +39,12 @@ ask ACCESS_AUTOMAT_OPERAT_DEV \
     "Emails of the 'automat-operat-dev' group, comma-separated — who gets into automat-operat-dev.gugnowski.com (you and the testers)" \
     ""
 
+# This environment's alerts channel: deployment failed, Degraded, not answering.
+ask DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF \
+    "Discord webhook of #app-automat-operat-dev-notif — alerts of automat-operat-dev. Enter = off" \
+    "off" silent
 echo
-save_source ACCESS_AUTOMAT_OPERAT_DEV
+save_source ACCESS_AUTOMAT_OPERAT_DEV DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF
 
 echo
 echo "== terraform/edge =="
@@ -54,6 +58,7 @@ if cluster_available; then
     # Role and database are declared in argocd/manifests/postgres/.
     database_access "$NAMESPACE" automat_operat_dev
     access_config "$NAMESPACE" automat-operat-dev
+    discord_channel app-automat-operat-dev-notif "${CURRENT[DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF]}"
 fi
 
 echo

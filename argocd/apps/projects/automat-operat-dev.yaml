@@ -16,12 +16,13 @@ metadata:
   # it deployed. Without this the resources stay orphaned in the cluster — see AGENTS.md, Zasady.
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  # Alerts to Discord for this environment (terraform/platform/notifications.tf). Remove these
-  # lines to silence it; "is it up" alerts are separate — argocd/manifests/gatus/config.yaml.
+  # Alerts (terraform/platform/notifications.tf): failures to #app-automat-operat-dev-notif,
+  # "deployed" to #suw-platf-deployments-notif.
+  # Remove a line to silence that event for this environment.
   annotations:
-    notifications.argoproj.io/subscribe.on-sync-failed.discord: ""
-    notifications.argoproj.io/subscribe.on-health-degraded.discord: ""
-    notifications.argoproj.io/subscribe.on-deployed.discord: ""
+    notifications.argoproj.io/subscribe.on-sync-failed.discord-app-automat-operat-dev-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.discord-app-automat-operat-dev-notif: ""
+    notifications.argoproj.io/subscribe.on-deployed.discord-suw-platf-deployments-notif: ""
 spec:
   project: default
 

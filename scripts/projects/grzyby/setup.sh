@@ -24,8 +24,12 @@ ask MCP_KEY \
     "$(openssl rand -hex 24)" \
     silent
 
+# This environment's alerts channel: deployment failed, Degraded, not answering.
+ask DISCORD_APP_GRZYBY_NOTIF \
+    "Discord webhook of #app-grzyby-notif — alerts of grzyby. Enter = off" \
+    "off" silent
 echo
-save_source MCP_KEY
+save_source MCP_KEY DISCORD_APP_GRZYBY_NOTIF
 
 echo
 echo "== cluster =="
@@ -33,6 +37,7 @@ if cluster_available; then
     secret "$NAMESPACE" mcp "MCP_KEY=${CURRENT[MCP_KEY]}"
     # Role and database are declared in argocd/manifests/postgres/.
     database_access "$NAMESPACE" grzyby
+    discord_channel app-grzyby-notif "${CURRENT[DISCORD_APP_GRZYBY_NOTIF]}"
 fi
 
 echo
