@@ -21,15 +21,36 @@ locals {
     "app-grzyby-notif",
   ]
 
-  # The text of each message, as a Go template. printf builds one Discord "content" string and
-  # toJson escapes it — an error message from Kubernetes can carry quotes and newlines that
-  # would break plain JSON.
+  # Each message is Go template code that leaves its text in $msg; the body then escapes it
+  # with toJson — an error message from Kubernetes can carry quotes and newlines that would
+  # break plain JSON.
   messages = {
-    "app-sync-failed"     = "printf \":x: **%s** — wdrożenie nieudane (%s)\\n%s\\n%s/applications/%s\" .app.metadata.name .app.status.operationState.phase .app.status.operationState.message .context.argocdUrl .app.metadata.name"
-    "app-health-degraded" = "printf \":warning: **%s** — aplikacja w stanie Degraded\\n%s/applications/%s\" .app.metadata.name .context.argocdUrl .app.metadata.name"
-    # Only the version: every image of a project carries the same sha-<commit> tag, and the
-    # pinned third-party ones (curl, Gotenberg) would only be noise.
-    "app-deployed" = "printf \":white_check_mark: **%s** — wdrożono %s\" .app.metadata.name (regexFind \"sha-[0-9a-f]+\" (join \" \" .app.status.summary.images) | default \"nową wersję\")"
+    "app-sync-failed"     = "{{- $msg := printf \":x: **%s** — wdrożenie nieudane (%s)\\n%s\\n%s/applications/%s\" .app.metadata.name .app.status.operationState.phase .app.status.operationState.message .context.argocdUrl .app.metadata.name -}}"
+    "app-health-degraded" = "{{- $msg := printf \":warning: **%s** — aplikacja w stanie Degraded\\n%s/applications/%s\" .app.metadata.name .context.argocdUrl .app.metadata.name -}}"
+
+    # The version (every image of a project carries the same sha-<commit> tag; the pinned
+    # third-party ones would be noise), the version it replaced — the last different image.tag in
+    # the Application's history — the title of the newest commit, and a link to the GitHub
+    # comparison listing every commit in between.
+    "app-deployed" = <<-EOT
+      {{- $cur := regexFind "sha-[0-9a-f]+" (join " " .app.status.summary.images) -}}
+      {{- $prev := "" -}}
+      {{- range .app.status.history -}}
+        {{- with .source -}}{{- with .helm -}}{{- range .parameters -}}
+          {{- if and (eq .name "image.tag") (ne .value $cur) -}}{{- $prev = .value -}}{{- end -}}
+        {{- end -}}{{- end -}}{{- end -}}
+      {{- end -}}
+      {{- $repo := .app.spec.source.repoURL | replace "git@github.com:" "https://github.com/" | trimSuffix ".git" -}}
+      {{- $msg := printf ":white_check_mark: **%s** — wdrożono %s" .app.metadata.name (default "nową wersję" $cur) -}}
+      {{- if $prev -}}{{- $msg = printf "%s (poprzednio %s)" $msg $prev -}}{{- end -}}
+      {{- if $cur -}}
+        {{- $title := (call .repo.GetCommitMetadata (trimPrefix "sha-" $cur)).Message | splitList "\n" | first -}}
+        {{- $msg = printf "%s\nOstatni commit: %s" $msg $title -}}
+      {{- end -}}
+      {{- if and $prev $cur -}}
+        {{- $msg = printf "%s\nZmiany: <%s/compare/%s...%s>" $msg $repo (trimPrefix "sha-" $prev) (trimPrefix "sha-" $cur) -}}
+      {{- end -}}
+    EOT
   }
 
   notifications = {
@@ -58,7 +79,7 @@ locals {
         webhook = {
           for channel in local.discord_channels : channel => {
             method = "POST"
-            body   = "{\"content\": {{ ${message} | toJson }}}"
+            body   = "${trimspace(message)}{\"content\": {{ toJson $msg }}}"
           }
         }
       })
