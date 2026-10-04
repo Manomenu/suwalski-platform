@@ -46,7 +46,15 @@ albo potrzeba rotacji.
 
 ## Strona startowa z linkami do usług
 
-**Status:** zapisane, nieprzeanalizowane.
+**Status:** zrobione 4.10.2026 — Homepage (`argocd/manifests/homepage/`) pod
+`http://hub.k8s.suwalski.internal`, przekierowanie z `http://k8s.suwalski.internal` (wymaga wpisu
+A w AdGuardzie: `k8s.suwalski.internal` → `192.168.0.119`). Widżety: zasoby klastra, Argo CD
+(konto `homepage`, tylko odczyt), Gatus, Proxmox (token `root@pam!homepage`, PVEAuditor),
+AdGuard (login z `setup.sh`). Homarr (LXC 117) usunięty. Zostaje: automatyczne wyczytywanie
+aplikacji z Ingressów (adnotacje `gethomepage.dev/*` w chartach projektów) — dziś lista
+aplikacji jest wpisana ręcznie w `config.yaml`.
+
+Pierwotny zapis:
 
 Jedna strona pod `http://suwalski.internal` z odnośnikami do wszystkiego, co stoi
 w domu — Argo CD, NAS, AdGuard, Proxmox, i co tam jeszcze dojdzie. Konfigurowana

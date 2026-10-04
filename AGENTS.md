@@ -16,6 +16,7 @@ argocd/
   apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage, cloudnative-pg, postgres)
   apps/projects/    Application'y projektów — po pliku na projekt i środowisko
   manifests/        manifesty elementów platformy: <element>/ — para z apps/platform/<element>.yaml
+                    (m.in. gatus/ — alerty, homepage/ — strona startowa hub.k8s.suwalski.internal)
 justfile            tylko lista modułów
 .just/
   <moduł>.just      recepty: cluster · platform · edge · check · argo
