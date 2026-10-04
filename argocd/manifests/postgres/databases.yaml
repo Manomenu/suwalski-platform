@@ -21,3 +21,7 @@ spec:
     name: shared
   name: grzyby
   owner: grzyby
+  # Created by the operator as a superuser: the grzyby role cannot create PostGIS itself.
+  extensions:
+    - name: postgis
+      ensure: present

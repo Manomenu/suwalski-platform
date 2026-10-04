@@ -320,6 +320,17 @@ provisioner `nas` potrzebuje dostępu do ścieżek hosta) — zapisywane przy ma
 
 ---
 
+## Limit zapytań dla publicznych aplikacji (grzyby)
+
+**Status:** zapisane 4.10.2026. `grzyby.gugnowski.com` jest publiczne (`public = true` w
+`terraform/edge/edge.auto.tfvars`) i broni się tylko kluczem w `/mcp`. Klucz zatrzymuje obcych,
+ale nie zalew zapytań z błędnym kluczem (każde trafia do klastra i dostaje 401). Darmowy plan
+Cloudflare ma jedną regułę rate limiting — w `terraform/edge` jako
+`cloudflare_ruleset` (phase `http_ratelimit`) dla hostów z `public = true`, np. 60 zapytań/min
+z jednego IP na `/mcp`. Robić, gdy adres zacznie krążyć poza właścicielem.
+
+---
+
 ## NetworkPolicy: kto może się łączyć z czym
 
 **Status:** zapisane.

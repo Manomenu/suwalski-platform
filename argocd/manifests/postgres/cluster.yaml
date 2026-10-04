@@ -11,8 +11,10 @@ metadata:
     argocd.argoproj.io/sync-options: Delete=false
 spec:
   instances: 1
-  # The "minimal" image: PostgreSQL without bundled extensions. Pinned to one build.
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-202609281634-minimal-trixie
+  # PostgreSQL with PostGIS (CloudNativePG's "standard" flavour; PostGIS has no "minimal" one).
+  # grzyby needs PostGIS; the extension is only present in a database that creates it
+  # (databases.yaml), so the others are unaffected. Pinned to one build.
+  imageName: ghcr.io/cloudnative-pg/postgis:17.11-3.6.4-202609281652-standard-trixie
 
   storage:
     storageClass: nas
