@@ -58,8 +58,14 @@ resource "cloudflare_zero_trust_access_policy" "group" {
 
 # ── Applications ──────────────────────────────────────────────────────────────
 
+# Public applications (public = true in edge.auto.tfvars) get no Access application: they are
+# called by machines that cannot log in, and guard themselves with a key.
+locals {
+  protected_apps = { for name, app in var.apps : name => app if !app.public }
+}
+
 resource "cloudflare_zero_trust_access_application" "app" {
-  for_each = var.apps
+  for_each = local.protected_apps
 
   account_id = var.account_id
   name       = each.key

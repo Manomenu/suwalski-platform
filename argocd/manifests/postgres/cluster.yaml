@@ -35,3 +35,8 @@ spec:
         login: true
         passwordSecret:
           name: automat-operat-dev
+      - name: grzyby
+        ensure: present
+        login: true
+        passwordSecret:
+          name: grzyby

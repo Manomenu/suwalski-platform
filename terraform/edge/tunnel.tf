@@ -29,11 +29,12 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
         hostname = "${name}.${var.zone_name}"
         service  = var.origin_service
 
-        origin_request = {
-          # Second line of defense. Access lets only logged-in users through, but if a DNS
-          # record without an Access application were ever created, traffic would reach the
-          # cluster without login. With this setting cloudflared itself checks the signed
-          # Access token and rejects requests that lack it.
+        # Second line of defense. Access lets only logged-in users through, but if a DNS
+        # record without an Access application were ever created, traffic would reach the
+        # cluster without login. With this setting cloudflared itself checks the signed
+        # Access token and rejects requests that lack it. A public app (public = true) has no
+        # Access application, so nothing to check here — it guards itself with a key.
+        origin_request = app.public ? null : {
           access = {
             required  = true
             team_name = var.team_name
