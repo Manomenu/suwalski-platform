@@ -1,0 +1,33 @@
+{
+    // The same rules the gate checks (`just check`), applied while typing — fewer surprises in CI.
+    "files.exclude": {
+        "**/.terraform": true
+    },
+    "files.associations": {
+        "*.just": "just",
+        "justfile": "just"
+    },
+
+    // Bash: shfmt with the gate's flags, shellcheck following `source` like the gate does.
+    "[shellscript]": {
+        "editor.defaultFormatter": "mkhl.shfmt",
+        "editor.formatOnSave": true
+    },
+    "shfmt.executableArgs": ["-i", "4", "-ci"],
+    "shellcheck.customArgs": ["-x"],
+
+    // Kubernetes manifests validated against the Kubernetes schema; Argo/CNPG resources carry
+    // their own `# yaml-language-server: $schema=` line, as kubeconform checks them.
+    "yaml.schemas": {
+        "kubernetes": ["argocd/manifests/**/*.yaml"]
+    },
+
+    // File nesting: a layer's plumbing folds under its main files, repo-level files under README.
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+        "README.md": "AGENTS.md, TODO.md, LICENSE, justfile, .editorconfig, .gitattributes, .gitignore, .tflint.hcl, .yamllint.yaml",
+        "versions.tf": "providers.tf, encryption.tf, .terraform.lock.hcl, terraform.tfstate, terraform.tfstate.backup",
+        "variables.tf": "*.auto.tfvars, secrets.auto.tfvars.example"
+    }
+}
