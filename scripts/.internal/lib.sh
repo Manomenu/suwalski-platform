@@ -129,8 +129,9 @@ secret_key() {
 
 # discord_channel CHANNEL URL — where the alerts of one Discord channel go. CHANNEL is the
 # channel's name on Discord (suw-platf-notif, app-automat-operat-dev-notif, …): Argo CD
-# Notifications knows it as service discord-<CHANNEL> (terraform/platform/notifications.tf),
-# Gatus as variable DISCORD_<CHANNEL> (argocd/manifests/gatus/). URL "off" = no channel.
+# Notifications knows it as service <CHANNEL> with the URL in key discord-<CHANNEL>
+# (terraform/platform/notifications.tf), Gatus as variable DISCORD_<CHANNEL>
+# (argocd/manifests/gatus/). URL "off" = no channel.
 discord_channel() {
     local channel="$1" url="$2" var
     if [ "$url" = off ]; then

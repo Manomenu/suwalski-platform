@@ -2,9 +2,11 @@
 # (including a red smoke test: a failed PostSync hook fails the whole sync), an application
 # turned Degraded, and a deployment succeeded.
 #
-# One Argo service per Discord channel, named after it: discord-<channel>. WHICH event goes to
+# One Argo service per Discord channel, named exactly like the channel. WHICH event goes to
 # which channel is decided by annotations on each Application —
-#   notifications.argoproj.io/subscribe.<trigger>.discord-<channel>: ""
+#   notifications.argoproj.io/subscribe.<trigger>.<channel>: ""
+# (Kubernetes allows 63 characters after the slash — hence no "discord-" prefix on the service;
+# repo-rules.sh checks the length.)
 # (failures to the environment's own channel, "deployed" to #suw-platf-deployments-notif); an
 # Application without them is silent. The webhook URLs are not here: they are keys
 # discord-<channel> of the argocd-notifications-secret Secret, each written by the setup.sh that
@@ -41,7 +43,7 @@ locals {
     secret = { create = false }
 
     notifiers = {
-      for channel in local.discord_channels : "service.webhook.discord-${channel}" => <<-EOT
+      for channel in local.discord_channels : "service.webhook.${channel}" => <<-EOT
         url: $discord-${channel}
         headers:
           - name: Content-Type
@@ -54,7 +56,7 @@ locals {
     templates = {
       for name, message in local.messages : "template.${name}" => yamlencode({
         webhook = {
-          for channel in local.discord_channels : "discord-${channel}" => {
+          for channel in local.discord_channels : channel => {
             method = "POST"
             body   = "{\"content\": {{ ${message} | toJson }}}"
           }

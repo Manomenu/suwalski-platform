@@ -106,5 +106,14 @@ for dir in scripts/projects/*/; do
         broken "$dir: no Application argocd/apps/projects/${name}[-<env>].yaml deploys it"
 done
 
+# 9. Annotation names fit Kubernetes: at most 63 characters after the slash. A longer one is
+#    valid YAML and passes kubeconform, but the API server rejects the object — the root app
+#    then stays OutOfSync (the Argo notification subscriptions ran into exactly this).
+while IFS=: read -r file line key; do
+    name="${key#*/}"
+    [ "${#name}" -le 63 ] || broken "$file:$line: annotation name '$name' is ${#name} characters after the slash (max 63)"
+done < <(tracked 'argocd/*.yaml' | xargs grep -noE '^[[:space:]]+[a-z0-9.-]+\.[a-z]+/[A-Za-z0-9._-]+' /dev/null |
+    sed -E 's/:[[:space:]]+/:/' || true)
+
 if [ "$BROKEN" -eq 0 ]; then echo "  all rules hold"; fi
 exit "$BROKEN"

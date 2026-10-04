@@ -12,8 +12,8 @@ metadata:
   # Alerts (terraform/platform/notifications.tf): failures to #suw-platf-notif.
   # Remove a line to silence that event for this environment.
   annotations:
-    notifications.argoproj.io/subscribe.on-sync-failed.discord-suw-platf-notif: ""
-    notifications.argoproj.io/subscribe.on-health-degraded.discord-suw-platf-notif: ""
+    notifications.argoproj.io/subscribe.on-sync-failed.suw-platf-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.suw-platf-notif: ""
 spec:
   project: default
 
