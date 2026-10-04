@@ -127,6 +127,31 @@ secret_key() {
     echo "  Secret $name, key $key, in namespace $ns: up to date"
 }
 
+# discord_check CHANNEL URL — is this a working Discord webhook, and is it the right channel?
+# Checks the form, asks Discord whether the webhook exists (GET: no message), then posts one
+# short message to the channel so you see it land where it should. The URL holds the webhook's
+# token, so it reaches curl through stdin (-K -), never as an argument.
+discord_check() {
+    local channel="$1" url="$2" code
+    if ! [[ "$url" =~ ^https://(discord\.com|discordapp\.com)/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]]; then
+        echo "  #$channel: not a Discord webhook URL (https://discord.com/api/webhooks/<id>/<token>) — not saved to the cluster" >&2
+        return 1
+    fi
+    code="$(printf 'url = "%s"\n' "$url" | curl -s -o /dev/null -w '%{http_code}' -K -)"
+    if [ "$code" != 200 ]; then
+        echo "  #$channel: Discord does not know this webhook (HTTP $code — deleted, or a typo) — not saved to the cluster" >&2
+        return 1
+    fi
+    code="$(printf 'url = "%s"\n' "$url" |
+        curl -s -o /dev/null -w '%{http_code}' -K - -H 'Content-Type: application/json' \
+            -d "{\"content\": \":bell: #$channel podłączony do suwalski-platform (setup.sh). Tu będą przychodzić alerty.\"}")"
+    if [ "$code" != 204 ] && [ "$code" != 200 ]; then
+        echo "  #$channel: the test message was refused (HTTP $code)" >&2
+        return 1
+    fi
+    echo "  #$channel: webhook works — a test message is on the channel; check it is the right one"
+}
+
 # discord_channel CHANNEL URL — where the alerts of one Discord channel go. CHANNEL is the
 # channel's name on Discord (suw-platf-notif, app-automat-operat-dev-notif, …): Argo CD
 # Notifications knows it as service <CHANNEL> with the URL in key discord-<CHANNEL>
@@ -138,6 +163,8 @@ discord_channel() {
         echo "  skipped: Discord channel #$channel (off)"
         return 0
     fi
+    # A bad URL is reported and skipped — the rest of setup.sh still runs; enter it again next run.
+    discord_check "$channel" "$url" || return 0
     var="DISCORD_$(printf '%s' "$channel" | tr 'a-z-' 'A-Z_')"
     secret_key argocd argocd-notifications-secret "discord-$channel" "$url"
     secret_key gatus gatus-discord "$var" "$url"
