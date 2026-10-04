@@ -25,6 +25,14 @@ resource "helm_release" "argocd" {
       params = {
         "server.insecure" = true
       }
+      # A local account only Homepage's widget uses: API tokens, no login, read-only. Its token
+      # comes from scripts/setup.sh (argocd_account_token) into the homepage-secrets Secret.
+      cm = {
+        "accounts.homepage" = "apiKey"
+      }
+      rbac = {
+        "policy.csv" = "g, homepage, role:readonly"
+      }
     }
 
     dex = { enabled = var.enable_dex }

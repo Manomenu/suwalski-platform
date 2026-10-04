@@ -60,6 +60,15 @@ data:
         alerts:
           - type: discord
 
+      - name: strona startowa (hub)
+        group: platforma
+        url: "http://homepage.homepage.svc.cluster.local/api/healthcheck"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
+
       # ── automat-operat-dev ─────────────────────────────────────────────────────
       - name: automat-operat-dev — strona
         group: automat-operat-dev
