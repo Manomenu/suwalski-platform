@@ -72,9 +72,25 @@ ask DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF \
     "Discord webhook of #suw-platf-deployments-notif — '✅ deployed' from every environment. Enter = off" \
     "off" silent
 
+# Start page widgets (argocd/manifests/homepage/). AdGuard has no API tokens — its widget logs
+# in with the web login. Enter = no AdGuard widget.
+ask ADGUARD_USER "AdGuard web login (Homepage's DNS widget). Enter = off" "off"
+ask ADGUARD_PASSWORD "AdGuard web password. Enter = off" "off" silent
+
+# A read-only Proxmox token for the same page, made once through the API (Proxmox shows its
+# secret only at creation). Delete the line from .secrets/platform.env to make a new one.
+if [ -z "${CURRENT[HOMEPAGE_PROXMOX_TOKEN]:-}" ]; then
+    if CURRENT[HOMEPAGE_PROXMOX_TOKEN]="$(proxmox_readonly_token homepage)"; then
+        echo "  Proxmox token root@pam!homepage (PVEAuditor): created"
+    else
+        CURRENT[HOMEPAGE_PROXMOX_TOKEN]=""
+        echo "  Proxmox token for Homepage: could not create (Proxmox unreachable?) — run again later"
+    fi
+fi
+
 echo
 save_source PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN STATE_PASSPHRASE \
-    DISCORD_SUW_PLATF_NOTIF DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF
+    DISCORD_SUW_PLATF_NOTIF DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF ADGUARD_USER ADGUARD_PASSWORD HOMEPAGE_PROXMOX_TOKEN
 
 # ── distribution: terraform/cluster ───────────────────────────────────────────
 echo
@@ -143,6 +159,26 @@ if cluster_available; then
     # which channel is decided in git; this only says where each channel is.
     discord_channel suw-platf-notif "${CURRENT[DISCORD_SUW_PLATF_NOTIF]}"
     discord_channel suw-platf-deployments-notif "${CURRENT[DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF]}"
+
+    # Start page widgets: homepage-secrets, HOMEPAGE_VAR_* (argocd/manifests/homepage/config.yaml).
+    if [ -n "${CURRENT[HOMEPAGE_PROXMOX_TOKEN]:-}" ]; then
+        secret_key homepage homepage-secrets HOMEPAGE_VAR_PROXMOX_TOKEN_ID "${CURRENT[HOMEPAGE_PROXMOX_TOKEN]%%=*}"
+        secret_key homepage homepage-secrets HOMEPAGE_VAR_PROXMOX_TOKEN_SECRET "${CURRENT[HOMEPAGE_PROXMOX_TOKEN]#*=}"
+    fi
+    if [ "${CURRENT[ADGUARD_USER]}" != off ] && [ "${CURRENT[ADGUARD_PASSWORD]}" != off ]; then
+        secret_key homepage homepage-secrets HOMEPAGE_VAR_ADGUARD_USER "${CURRENT[ADGUARD_USER]}"
+        secret_key homepage homepage-secrets HOMEPAGE_VAR_ADGUARD_PASSWORD "${CURRENT[ADGUARD_PASSWORD]}"
+    fi
+    # The Argo token lives only in the cluster: a lost one is simply made again.
+    if ! kubectl -n homepage get secret homepage-secrets -o jsonpath='{.data.HOMEPAGE_VAR_ARGOCD_TOKEN}' 2>/dev/null | grep -q .; then
+        _token="$(argocd_account_token homepage)"
+        if [ -n "$_token" ]; then
+            secret_key homepage homepage-secrets HOMEPAGE_VAR_ARGOCD_TOKEN "$_token"
+        else
+            echo "  skipped: Argo CD token for Homepage (no admin login — run again once Argo is up)"
+        fi
+    fi
+    kubectl -n homepage rollout restart deployment/homepage >/dev/null 2>&1 || true
 fi
 
 echo

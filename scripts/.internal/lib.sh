@@ -172,6 +172,44 @@ discord_channel() {
     kubectl -n gatus rollout restart deployment/gatus >/dev/null 2>&1 || true
 }
 
+# argocd_account_token ACCOUNT — prints a new API token for a local Argo CD account (one with
+# the apiKey capability, terraform/platform/main.tf). Logs in as admin with the initial password
+# through a short port-forward; passwords and tokens travel through stdin, never as arguments.
+argocd_account_token() {
+    local account="$1" pf session token
+    kubectl -n argocd port-forward svc/argocd-server 18089:80 >/dev/null 2>&1 &
+    pf=$!
+    for _ in $(seq 1 20); do
+        curl -fs -o /dev/null http://127.0.0.1:18089/healthz && break
+        sleep 0.5
+    done
+    session="$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d |
+        jq -Rn '{username: "admin", password: input}' |
+        curl -fs -H 'content-type: application/json' -d @- http://127.0.0.1:18089/api/v1/session | jq -r '.token // empty')" || true
+    if [ -n "$session" ]; then
+        token="$(printf 'header = "Authorization: Bearer %s"\n' "$session" |
+            curl -fs -K - -X POST -H 'content-type: application/json' -d '{}' \
+                "http://127.0.0.1:18089/api/v1/account/$account/token" | jq -r '.token // empty')" || true
+    fi
+    kill "$pf" 2>/dev/null || true
+    printf '%s' "${token:-}"
+}
+
+# proxmox_readonly_token NAME — creates (or re-creates) the API token root@pam!NAME with the
+# read-only PVEAuditor role and prints "root@pam!NAME=<secret>". Proxmox shows a token's secret
+# only once, so the caller saves it. Uses the Terraform token (CURRENT[PROXMOX_API_TOKEN]).
+proxmox_readonly_token() {
+    local name="$1" api="https://192.168.0.111:8006/api2/json" auth value
+    auth="$(printf 'header = "Authorization: PVEAPIToken=%s"\n' "${CURRENT[PROXMOX_API_TOKEN]}")"
+    printf '%s' "$auth" | curl -sk -K - -X DELETE "$api/access/users/root@pam/token/$name" >/dev/null || true
+    value="$(printf '%s' "$auth" | curl -sk -K - -X POST -d privsep=1 -d "comment=Homepage widget (read-only)" \
+        "$api/access/users/root@pam/token/$name" | jq -r '.data.value // empty')"
+    [ -n "$value" ] || return 1
+    printf '%s' "$auth" | curl -sk -K - -X PUT -d path=/ -d roles=PVEAuditor -d "tokens=root@pam!$name" \
+        "$api/access/acl" >/dev/null
+    printf 'root@pam!%s=%s' "$name" "$value"
+}
+
 # secret NAMESPACE NAME KEY=VALUE… — idempotent: creates the namespace and the Secret or
 # updates them. --dry-run + apply instead of create, because a plain `create` fails when the
 # object already exists. Argo also creates project namespaces (CreateNamespace), but the

@@ -1,0 +1,32 @@
+# Homepage — the start page with every address of the platform and the home network:
+# http://hub.k8s.suwalski.internal (and http://k8s.suwalski.internal redirects there).
+# Manifests in THIS repo (argocd/manifests/homepage/), like Gatus. Widget secrets come from
+# scripts/setup.sh (homepage-secrets), never from git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homepage
+  namespace: argocd
+  # Alerts (terraform/platform/notifications.tf): failures to #suw-platf-notif.
+  # Remove a line to silence that event for this environment.
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.suw-platf-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.suw-platf-notif: ""
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/homepage
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homepage
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,125 @@
+# Homepage — the start page of the platform: one place with every address, and a few widgets
+# that say whether things are fine. Layout and links are THIS file; a change is a commit.
+#
+# Deliberately plain: three groups, no wallpaper, no web search, no weather. A widget earns its
+# place only when it answers "is it fine?" at a glance.
+#
+# Secrets (widget tokens and passwords) are NOT here: {{HOMEPAGE_VAR_*}} placeholders are filled
+# from the homepage-secrets Secret, written by scripts/setup.sh. A missing one only makes its
+# widget show an error — the link still works.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+data:
+  kubernetes.yaml: |
+    mode: cluster
+  settings.yaml: |
+    title: suwalski-platform
+    theme: dark
+    color: slate
+    headerStyle: clean
+    hideVersion: true
+    statusStyle: dot
+    language: pl
+    target: _blank
+    disableIndexing: true
+    layout:
+      Platforma:
+        style: row
+        columns: 4
+      Aplikacje:
+        style: row
+        columns: 4
+      Dom:
+        style: row
+        columns: 4
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: k3s
+        nodes:
+          show: false
+  services.yaml: |
+    # yamllint disable rule:line-length
+    - Platforma:
+        - Argo CD:
+            icon: argo-cd.svg
+            href: http://argocd.k8s.suwalski.internal
+            description: co jest wdrożone i w jakiej wersji
+            widget:
+              type: argocd
+              url: http://argocd-server.argocd.svc.cluster.local
+              key: "{{HOMEPAGE_VAR_ARGOCD_TOKEN}}"
+              fields: ["apps", "synced", "outOfSync", "degraded"]
+        - Gatus:
+            icon: gatus.svg
+            href: http://gatus.k8s.suwalski.internal
+            description: czy wszystko odpowiada
+            widget:
+              type: gatus
+              url: http://gatus.gatus.svc.cluster.local
+        - Proxmox:
+            icon: proxmox.svg
+            href: https://proxmox.suwalski.internal:8006
+            description: hypervisor aoostar
+            widget:
+              type: proxmox
+              url: https://192.168.0.111:8006
+              username: "{{HOMEPAGE_VAR_PROXMOX_TOKEN_ID}}"
+              password: "{{HOMEPAGE_VAR_PROXMOX_TOKEN_SECRET}}"
+              node: aoostar
+        - Cloudflare:
+            icon: cloudflare.svg
+            href: https://one.dash.cloudflare.com/
+            description: tunel, DNS, Access
+    - Aplikacje:
+        - automat-operat (dev):
+            icon: mdi-file-document-edit-outline
+            href: https://automat-operat-dev.gugnowski.com
+            description: operaty — wersja testowa
+        - grzyby:
+            icon: mdi-mushroom-outline
+            href: https://grzyby.gugnowski.com
+            description: serwer MCP dla chatbotów
+        - suwalski-investing-tools:
+            icon: mdi-chart-line
+            href: http://suwalski-investing-tools.k8s.suwalski.internal
+            description: narzędzia inwestycyjne
+    - Dom:
+        - AdGuard:
+            icon: adguard-home.svg
+            href: http://adguard.suwalski.internal
+            description: DNS domowy (192.168.0.115)
+            widget:
+              type: adguard
+              url: http://192.168.0.115
+              username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
+              password: "{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}"
+        - OpenMediaVault:
+            icon: openmediavault.svg
+            href: http://openmediavault.suwalski.internal
+            description: NAS (192.168.0.197)
+        - Jellyfin:
+            icon: jellyfin.svg
+            href: http://jellyfin.suwalski.internal:8096
+            description: filmy i seriale
+        - Tailscale:
+            icon: tailscale.svg
+            href: https://login.tailscale.com/admin/machines
+            description: dostęp spoza domu
+        - Bitwarden:
+            icon: bitwarden.svg
+            href: https://vault.bitwarden.eu
+            description: hasła i kopie .secrets/
+  # Every file Homepage expects must exist (v2.4: also proxmox.yaml, for per-VM stats we do not
+  # use) — a missing one it tries to create in /app/config, fails, and exits.
+  proxmox.yaml: ""
+  bookmarks.yaml: ""
+  custom.css: ""
+  custom.js: ""
+  docker.yaml: ""

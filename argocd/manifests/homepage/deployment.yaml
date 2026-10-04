@@ -1,0 +1,179 @@
+# Homepage — start page at http://hub.k8s.suwalski.internal (home network only, like Argo).
+# Config in config.yaml; a ServiceAccount with read-only access to the cluster feeds the
+# cluster CPU/memory widget.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage
+rules:
+  # Read only: what runs, and how much CPU and memory it takes.
+  - apiGroups: [""]
+    resources: [namespaces, pods, nodes]
+    verbs: [get, list]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list]
+  - apiGroups: [metrics.k8s.io]
+    resources: [nodes, pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homepage
+subjects:
+  - kind: ServiceAccount
+    name: homepage
+    namespace: homepage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  labels:
+    app: homepage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      serviceAccountName: homepage
+      automountServiceAccountToken: true
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:v2.4.0
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            # The names it may be opened under; the pod IP is for the probes.
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: "hub.k8s.suwalski.internal,$(MY_POD_IP):3000"
+          envFrom:
+            # HOMEPAGE_VAR_* for the widgets (config.yaml). Optional: without it the page
+            # still works, only those widgets show an error.
+            - secretRef:
+                name: homepage-secrets
+                optional: true
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /api/healthcheck
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /api/healthcheck
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 20m, memory: 128Mi }
+            limits: { memory: 384Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            # Each file on its own: /app/config must stay writable for the logs directory.
+            - { name: config, mountPath: /app/config/kubernetes.yaml, subPath: kubernetes.yaml }
+            - { name: config, mountPath: /app/config/settings.yaml, subPath: settings.yaml }
+            - { name: config, mountPath: /app/config/widgets.yaml, subPath: widgets.yaml }
+            - { name: config, mountPath: /app/config/services.yaml, subPath: services.yaml }
+            - { name: config, mountPath: /app/config/bookmarks.yaml, subPath: bookmarks.yaml }
+            - { name: config, mountPath: /app/config/docker.yaml, subPath: docker.yaml }
+            - { name: config, mountPath: /app/config/proxmox.yaml, subPath: proxmox.yaml }
+            - { name: config, mountPath: /app/config/custom.css, subPath: custom.css }
+            - { name: config, mountPath: /app/config/custom.js, subPath: custom.js }
+            - { name: logs, mountPath: /app/config/logs }
+      volumes:
+        - name: config
+          configMap:
+            name: homepage-config
+        - name: logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+spec:
+  selector:
+    app: homepage
+  ports:
+    - port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homepage
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: hub.k8s.suwalski.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage
+                port:
+                  number: 80
+---
+# http://k8s.suwalski.internal → the start page. The bare name is NOT covered by the
+# *.k8s.suwalski.internal wildcard: it needs its own A record in AdGuard (→ 192.168.0.119).
+# yamllint disable-line rule:line-length
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/traefik.io/middleware_v1alpha1.json
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: to-hub
+spec:
+  redirectRegex:
+    regex: ^https?://k8s\.suwalski\.internal(/.*)?$
+    replacement: http://hub.k8s.suwalski.internal${1}
+    permanent: false
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k8s-to-hub
+  annotations:
+    # <namespace>-<middleware>@kubernetescrd: the Middleware above, in this namespace.
+    traefik.ingress.kubernetes.io/router.middlewares: homepage-to-hub@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: k8s.suwalski.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage
+                port:
+                  number: 80
