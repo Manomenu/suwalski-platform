@@ -33,7 +33,7 @@ spec:
       parameters:
         # ↓ THIS ONE LINE IS THE DEPLOYMENT.
         - name: image.tag
-          value: sha-b9c8a9c
+          value: sha-15fdd80
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
