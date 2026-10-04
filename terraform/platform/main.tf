@@ -27,8 +27,9 @@ resource "helm_release" "argocd" {
       }
     }
 
-    dex           = { enabled = var.enable_dex }
-    notifications = { enabled = var.enable_notifications }
+    dex = { enabled = var.enable_dex }
+    # Deployment results to Discord — notifications.tf.
+    notifications = local.notifications
   })]
 }
 

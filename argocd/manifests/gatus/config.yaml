@@ -1,0 +1,82 @@
+# Gatus: checks every minute or two whether things answer, and tells Discord when they stop
+# (and when they come back). The list below IS the monitoring — a change here is a git commit.
+#
+# Per-environment switch: an endpoint with `alerts:` notifies Discord, one without it is only
+# shown on the status page (http://gatus.k8s.suwalski.internal). Deployment results (sync
+# failed, Degraded, deployed) come from Argo CD Notifications instead — annotations on the
+# environment's Application (argocd/apps/projects/), terraform/platform/main.tf.
+#
+# DISCORD_WEBHOOK_URL comes from the gatus-discord Secret (scripts/setup.sh), never from git.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gatus-config
+data:
+  config.yaml: |
+    # yamllint disable rule:line-length
+    alerting:
+      discord:
+        webhook-url: "${DISCORD_WEBHOOK_URL}"
+        title: ":rotating_light: suwalski-platform"
+        default-alert:
+          # Three failed checks in a row before the first message — one slow answer is not
+          # an outage — and two good ones before "resolved".
+          failure-threshold: 3
+          success-threshold: 2
+          send-on-resolved: true
+
+    ui:
+      title: "suwalski-platform — status"
+      header: "suwalski-platform"
+
+    endpoints:
+      # ── platform ───────────────────────────────────────────────────────────────
+      - name: tunel Cloudflare
+        group: platforma
+        # A public app behind the tunnel: if this answers, Cloudflare → tunnel → cloudflared →
+        # Traefik works for every app. (Apps behind Access cannot be checked from outside
+        # without logging in — their own checks below go through the cluster.)
+        url: "https://grzyby.gugnowski.com/healthz"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
+
+      - name: PostgreSQL (shared)
+        group: platforma
+        url: "tcp://shared-rw.postgres.svc.cluster.local:5432"
+        interval: 1m
+        conditions:
+          - "[CONNECTED] == true"
+        alerts:
+          - type: discord
+
+      # ── automat-operat-dev ─────────────────────────────────────────────────────
+      - name: automat-operat-dev — strona
+        group: automat-operat-dev
+        url: "http://automat-operat-dev-web.automat-operat-dev.svc.cluster.local/healthz"
+        interval: 1m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
+
+      - name: automat-operat-dev — serwer i baza
+        group: automat-operat-dev
+        # Through nginx like the browser; the server answers only once its database is up.
+        url: "http://automat-operat-dev-web.automat-operat-dev.svc.cluster.local/api/health"
+        interval: 1m
+        conditions:
+          - "[STATUS] == 200"
+          - "[BODY].status == ok"
+        alerts:
+          - type: discord
+
+      # ── grzyby (no alerts: a hobby — shown on the status page only) ─────────────
+      - name: grzyby — serwer
+        group: grzyby
+        url: "http://grzyby-web.grzyby.svc.cluster.local/api/health"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
