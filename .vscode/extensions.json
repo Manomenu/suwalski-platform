@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "hashicorp.terraform",
+        "timonwong.shellcheck",
+        "mkhl.shfmt",
+        "redhat.vscode-yaml",
+        "nefrob.vscode-just-syntax",
+        "editorconfig.editorconfig",
+        "github.vscode-github-actions"
+    ]
+}

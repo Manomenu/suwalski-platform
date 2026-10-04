@@ -22,6 +22,9 @@ justfile            tylko lista modułów
   lib/              bash, którego recepty używają (też bramka: check.sh, repo-rules.sh) — nie wołać z ręki
 .github/workflows/  CI: check.yml odpala `just check` przy każdym pushu
 .tflint.hcl         reguły tflint dla wszystkich warstw
+.editorconfig       kodowanie, LF, wcięcia (bash 4, jak shfmt) — edytor robi to samo co bramka
+.gitattributes      LF w każdym checkoucie; zaszyfrowany stan bez diffu tekstowego
+.vscode/            edytor robi to, co bramka: shfmt/shellcheck z jej flagami, schemat Kubernetesa, zagnieżdżanie plików
 .yamllint.yaml      reguły yamllint dla argocd/ i .github/
 scripts/            tylko to, czego just nie zrobi: source do powłoki i sekrety
   setup.sh          platforma: just + sekrety wspólne dla klastra
@@ -100,7 +103,7 @@ zmiany: `just check` ma przejść. Formatowanie poprawia `just check fmt`.
 | bash | shellcheck, shfmt (`-i 4 -ci`) |
 | justfile i moduły | `just --fmt --check` |
 | YAML, manifesty, CI | yamllint (`.yamllint.yaml`), kubeconform `-strict` (także CRD Argo), actionlint |
-| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests albo chart w przypiętej wersji, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach |
+| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests albo chart w przypiętej wersji, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach, pary `scripts/projects/<projekt>/` ↔ `argocd/apps/projects/<projekt>[-<środowisko>].yaml` |
 | sekrety | gitleaks na całej historii i na niezacommitowanych zmianach |
 
 `just check live` sprawdza żywe środowisko: plan każdej warstwy bez zmian (dryf = ktoś

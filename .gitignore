@@ -16,6 +16,12 @@ override.tf.json
 secrets.auto.tfvars
 .secrets.env
 .secrets/
+# Key files outside .secrets/ by mistake still never reach git status (gitleaks is the second net).
+*.pem
+*.key
+*.p12
+id_rsa*
+id_ed25519*
 # Cloudflare Access groups: people's emails — private, and the repo is public.
 terraform/edge/access/*.json
 terraform.tfvars

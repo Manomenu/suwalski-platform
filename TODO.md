@@ -300,6 +300,26 @@ provisioner `nas` potrzebuje dostępu do ścieżek hosta) — zapisywane przy ma
 
 ---
 
+## Szczelność reguł — lekcje z automat-operat i solid-app-tpl (4.10.2026)
+
+**Status:** w większości zrobione 4.10.2026. Zasada z `automat-operat` i szablonu `solid-app-tpl`
+— „nowy element jest objęty regułami od pierwszego pliku” — tutaj:
+
+- ~~Kompletność par projekt ↔ aplikacja~~ — reguła 8 w `repo-rules.sh`: Application bez
+  `scripts/projects/…` i katalog projektu bez żadnej Application oblewają bramkę.
+- ~~`.gitignore`: pliki kluczy także poza `.secrets/`~~ — `*.pem`, `*.key`, `*.p12`, `id_rsa*`,
+  `id_ed25519*`.
+- Przy okazji: `.editorconfig` (LF, UTF-8, wcięcia jak shfmt) i `.gitattributes` (LF w każdym
+  checkoucie, zaszyfrowany stan bez diffu tekstowego, lockfile'y jako wygenerowane).
+- **Zostaje: smoke test w chartach projektów.** Platforma traktuje zieloną synchronizację w Argo
+  jako „wdrożone i działa”, a to prawda tylko wtedy, gdy chart ma Job PostSync
+  (`templates/smoke-test.yaml`). Wymaga pobrania charta projektu — razem z punktem „Parametry
+  projektów względem ich chartów” wyżej (ten sam pobrany chart); brak Joba = błąd.
+- shellcheck — nic do zrobienia (obejmuje wszystkie śledzone `*.sh` i `.githooks/*`); walidacja
+  `compose.yaml` nie dotyczy — platforma nie ma stosu compose.
+
+---
+
 ## NetworkPolicy: kto może się łączyć z czym
 
 **Status:** zapisane.

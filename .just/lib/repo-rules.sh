@@ -91,5 +91,20 @@ for state in $(tracked '*.tfstate'); do
         broken "$state: not encrypted — run any tofu plan/apply in its layer with encryption.tf in place"
 done
 
+# 8. Projects come in pairs: scripts/projects/<project>/ (its secrets) and an Application
+#    argocd/apps/projects/<project>[-<env>].yaml. An Application without a setup.sh has nobody to
+#    create its secrets; a project directory without any Application is left over. An <env>
+#    directory may be prepared before its Application (automat-operat/prod).
+for app in $(tracked 'argocd/apps/projects/*.yaml'); do
+    name="$(basename "$app" .yaml)"
+    [ -d "scripts/projects/$name" ] || [ -d "scripts/projects/${name%-*}/${name##*-}" ] ||
+        broken "$app: no scripts/projects/$name/ nor scripts/projects/${name%-*}/${name##*-}/ — who creates its secrets?"
+done
+for dir in scripts/projects/*/; do
+    name="$(basename "$dir")"
+    compgen -G "argocd/apps/projects/$name.yaml" >/dev/null || compgen -G "argocd/apps/projects/$name-*.yaml" >/dev/null ||
+        broken "$dir: no Application argocd/apps/projects/${name}[-<env>].yaml deploys it"
+done
+
 if [ "$BROKEN" -eq 0 ]; then echo "  all rules hold"; fi
 exit "$BROKEN"
