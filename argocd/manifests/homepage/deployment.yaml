@@ -61,9 +61,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            # The names it may be opened under; the pod IP is for the probes.
+            # The names it may be opened under: the start page, the Service (Gatus checks it
+            # there) and the pod IP (the probes). Anything else gets 400.
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "hub.k8s.suwalski.internal,$(MY_POD_IP):3000"
+              value: "hub.k8s.suwalski.internal,homepage.homepage.svc.cluster.local,$(MY_POD_IP):3000"
           envFrom:
             # HOMEPAGE_VAR_* for the widgets (config.yaml). Optional: without it the page
             # still works, only those widgets show an error.
