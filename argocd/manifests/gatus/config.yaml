@@ -4,9 +4,17 @@
 # Per-environment switch: an endpoint with `alerts:` notifies Discord, one without it is only
 # shown on the status page (http://gatus.k8s.suwalski.internal). Deployment results (sync
 # failed, Degraded, deployed) come from Argo CD Notifications instead — annotations on the
-# environment's Application (argocd/apps/projects/), terraform/platform/main.tf.
+# environment's Application, terraform/platform/notifications.tf.
 #
-# DISCORD_WEBHOOK_URL comes from the gatus-discord Secret (scripts/setup.sh), never from git.
+# Channels: platform checks go to #suw-platf-notif (the default below); a project's checks name
+# their own channel with `provider-override`. The webhook URLs are variables from the
+# gatus-discord Secret, one per channel, set by the setup.sh that owns the channel
+# (scripts/.internal/lib.sh, discord_channel) — never in git.
+#
+# Do NOT route by `overrides:` per group: Gatus rejects the whole Discord provider — every
+# alert, silently — when one group's URL is empty, i.e. when one project has not run its
+# setup.sh yet. An empty `provider-override` is skipped instead: the alert falls back to
+# #suw-platf-notif. (Tested against v5.37.0.)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -16,7 +24,7 @@ data:
     # yamllint disable rule:line-length
     alerting:
       discord:
-        webhook-url: "${DISCORD_WEBHOOK_URL}"
+        webhook-url: "${DISCORD_SUW_PLATF_NOTIF}"
         title: ":rotating_light: suwalski-platform"
         default-alert:
           # Three failed checks in a row before the first message — one slow answer is not
@@ -61,6 +69,8 @@ data:
           - "[STATUS] == 200"
         alerts:
           - type: discord
+            provider-override:
+              webhook-url: "${DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF}"
 
       - name: automat-operat-dev — serwer i baza
         group: automat-operat-dev
@@ -72,11 +82,17 @@ data:
           - "[BODY].status == ok"
         alerts:
           - type: discord
+            provider-override:
+              webhook-url: "${DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF}"
 
-      # ── grzyby (no alerts: a hobby — shown on the status page only) ─────────────
+      # ── grzyby ──────────────────────────────────────────────────────────────────
       - name: grzyby — serwer
         group: grzyby
         url: "http://grzyby-web.grzyby.svc.cluster.local/api/health"
         interval: 2m
         conditions:
           - "[STATUS] == 200"
+        alerts:
+          - type: discord
+            provider-override:
+              webhook-url: "${DISCORD_APP_GRZYBY_NOTIF}"

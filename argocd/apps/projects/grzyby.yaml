@@ -15,6 +15,13 @@ metadata:
   # Deleting the Application also deletes everything it deployed — see AGENTS.md, Zasady.
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  # Alerts (terraform/platform/notifications.tf): failures to #app-grzyby-notif,
+  # "deployed" to #suw-platf-deployments-notif.
+  # Remove a line to silence that event for this environment.
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.discord-app-grzyby-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.discord-app-grzyby-notif: ""
+    notifications.argoproj.io/subscribe.on-deployed.discord-suw-platf-deployments-notif: ""
 spec:
   project: default
 

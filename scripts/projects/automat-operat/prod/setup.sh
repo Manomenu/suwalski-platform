@@ -19,8 +19,12 @@ ask ACCESS_AUTOMAT_OPERAT \
     "Emails of the 'automat-operat' group, comma-separated — who gets into automat-operat.gugnowski.com (e.g. you and auntie)" \
     ""
 
+# This environment's alerts channel: deployment failed, Degraded, not answering.
+ask DISCORD_APP_AUTOMAT_OPERAT_NOTIF \
+    "Discord webhook of #app-automat-operat-notif — alerts of automat-operat (production). Enter = off" \
+    "off" silent
 echo
-save_source ACCESS_AUTOMAT_OPERAT
+save_source ACCESS_AUTOMAT_OPERAT DISCORD_APP_AUTOMAT_OPERAT_NOTIF
 
 echo
 echo "== terraform/edge =="
@@ -35,6 +39,13 @@ write_group automat-operat "${CURRENT[ACCESS_AUTOMAT_OPERAT]}"
 # if cluster_available; then
 #     secret automat-operat-prod automat-operat-sec "DB_PASSWORD=${CURRENT[DB_PASSWORD]}"
 # fi
+
+echo
+echo "== cluster =="
+if cluster_available; then
+    # Ready before production is: the first deployment's alerts already have somewhere to go.
+    discord_channel app-automat-operat-notif "${CURRENT[DISCORD_APP_AUTOMAT_OPERAT_NOTIF]}"
+fi
 
 echo
 echo "== Next =="

@@ -29,8 +29,8 @@ spec:
             - name: GATUS_CONFIG_PATH
               value: /config/config.yaml
           envFrom:
-            # DISCORD_WEBHOOK_URL. Optional: without it Gatus still checks and shows the
-            # status page, only the alerts go nowhere.
+            # DISCORD_<CHANNEL>, one per Discord channel (config.yaml). Optional: without it
+            # Gatus still checks and shows the status page, only the alerts go nowhere.
             - secretRef:
                 name: gatus-discord
                 optional: true

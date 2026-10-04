@@ -115,6 +115,35 @@ cluster_available() {
     fi
 }
 
+# secret_key NAMESPACE NAME KEY VALUE — sets ONE key of a Secret several scripts share, leaving
+# the keys the other scripts wrote alone (secret() below replaces the whole Secret). The value
+# travels through stdin, never as an argument.
+secret_key() {
+    local ns="$1" name="$2" key="$3" value="$4"
+    kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    kubectl -n "$ns" get secret "$name" >/dev/null 2>&1 || kubectl -n "$ns" create secret generic "$name" >/dev/null
+    printf '%s' "$value" | jq -Rs --arg k "$key" '{stringData: {($k): .}}' |
+        kubectl -n "$ns" patch secret "$name" --type merge --patch-file /dev/stdin >/dev/null
+    echo "  Secret $name, key $key, in namespace $ns: up to date"
+}
+
+# discord_channel CHANNEL URL — where the alerts of one Discord channel go. CHANNEL is the
+# channel's name on Discord (suw-platf-notif, app-automat-operat-dev-notif, …): Argo CD
+# Notifications knows it as service discord-<CHANNEL> (terraform/platform/notifications.tf),
+# Gatus as variable DISCORD_<CHANNEL> (argocd/manifests/gatus/). URL "off" = no channel.
+discord_channel() {
+    local channel="$1" url="$2" var
+    if [ "$url" = off ]; then
+        echo "  skipped: Discord channel #$channel (off)"
+        return 0
+    fi
+    var="DISCORD_$(printf '%s' "$channel" | tr 'a-z-' 'A-Z_')"
+    secret_key argocd argocd-notifications-secret "discord-$channel" "$url"
+    secret_key gatus gatus-discord "$var" "$url"
+    # Gatus reads its variables at start-up.
+    kubectl -n gatus rollout restart deployment/gatus >/dev/null 2>&1 || true
+}
+
 # secret NAMESPACE NAME KEY=VALUE… — idempotent: creates the namespace and the Secret or
 # updates them. --dry-run + apply instead of create, because a plain `create` fails when the
 # object already exists. Argo also creates project namespaces (CreateNamespace), but the

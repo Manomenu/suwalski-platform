@@ -62,15 +62,19 @@ ask STATE_PASSPHRASE \
     "Passphrase encrypting the Terraform state. KEEP A COPY in a password manager — the state in git is useless without it" \
     "$(openssl rand -base64 33 | tr -d '\n')" silent
 
-# Alerts: Argo CD Notifications (deployment results) and Gatus (is it up) post to one Discord
-# channel. Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.
-# Whoever has the URL can post to the channel, so it is a secret. "off" = no alerts.
-ask DISCORD_WEBHOOK_URL \
-    "Discord webhook URL for alerts (https://discord.com/api/webhooks/…). Enter = off" \
+# Alerts go to Discord, one channel per concern. The platform owns two; every project
+# environment owns its own (its setup.sh). Discord: channel settings → Integrations → Webhooks →
+# New Webhook → Copy Webhook URL. Whoever has a URL can post to the channel, so it is a secret.
+ask DISCORD_SUW_PLATF_NOTIF \
+    "Discord webhook of #suw-platf-notif — the platform is down (tunnel, database, platform apps). Enter = off" \
+    "off" silent
+ask DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF \
+    "Discord webhook of #suw-platf-deployments-notif — '✅ deployed' from every environment. Enter = off" \
     "off" silent
 
 echo
-save_source PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN STATE_PASSPHRASE DISCORD_WEBHOOK_URL
+save_source PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN STATE_PASSPHRASE \
+    DISCORD_SUW_PLATF_NOTIF DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF
 
 # ── distribution: terraform/cluster ───────────────────────────────────────────
 echo
@@ -135,16 +139,10 @@ if cluster_available; then
         echo "  skipped: tunnel token (no tunnel yet — first: just edge apply)"
     fi
 
-    # Alerts (terraform/platform/notifications.tf, argocd/manifests/gatus/). Which environment
-    # alerts is decided in git, not here — this only says where the messages go.
-    if [ "${CURRENT[DISCORD_WEBHOOK_URL]}" != off ]; then
-        secret argocd argocd-notifications-secret "discord-webhook-url=${CURRENT[DISCORD_WEBHOOK_URL]}"
-        secret gatus gatus-discord "DISCORD_WEBHOOK_URL=${CURRENT[DISCORD_WEBHOOK_URL]}"
-        # Gatus reads the variable at start-up; a new URL needs a new pod.
-        kubectl -n gatus rollout restart deployment/gatus >/dev/null 2>&1 || true
-    else
-        echo "  skipped: alerts (DISCORD_WEBHOOK_URL = off)"
-    fi
+    # Alerts (terraform/platform/notifications.tf, argocd/manifests/gatus/). WHICH events go to
+    # which channel is decided in git; this only says where each channel is.
+    discord_channel suw-platf-notif "${CURRENT[DISCORD_SUW_PLATF_NOTIF]}"
+    discord_channel suw-platf-deployments-notif "${CURRENT[DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF]}"
 fi
 
 echo
