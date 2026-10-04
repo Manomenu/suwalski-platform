@@ -20,9 +20,9 @@ metadata:
   # "deployed" to #suw-platf-deployments-notif.
   # Remove a line to silence that event for this environment.
   annotations:
-    notifications.argoproj.io/subscribe.on-sync-failed.discord-app-automat-operat-dev-notif: ""
-    notifications.argoproj.io/subscribe.on-health-degraded.discord-app-automat-operat-dev-notif: ""
-    notifications.argoproj.io/subscribe.on-deployed.discord-suw-platf-deployments-notif: ""
+    notifications.argoproj.io/subscribe.on-sync-failed.app-automat-operat-dev-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.app-automat-operat-dev-notif: ""
+    notifications.argoproj.io/subscribe.on-deployed.suw-platf-deployments-notif: ""
 spec:
   project: default
 
