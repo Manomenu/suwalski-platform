@@ -88,8 +88,9 @@ data:
             description: serwer MCP dla chatbotów
         - suwalski-investing-tools:
             icon: mdi-chart-line
-            href: http://suwalski-investing-tools.k8s.suwalski.internal
-            description: narzędzia inwestycyjne
+            # The web UI; suwalski-investing-tools.k8s.suwalski.internal serves only /mcp.
+            href: http://rdcf.k8s.suwalski.internal
+            description: narzędzia inwestycyjne (MCP pod suwalski-investing-tools.k8s…/mcp)
     - Dom:
         - AdGuard:
             icon: adguard-home.svg
