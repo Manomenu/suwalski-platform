@@ -11,3 +11,13 @@ spec:
     name: shared
   name: automat_operat_dev
   owner: automat_operat_dev
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: grzyby
+spec:
+  cluster:
+    name: shared
+  name: grzyby
+  owner: grzyby

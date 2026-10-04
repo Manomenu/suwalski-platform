@@ -11,7 +11,8 @@ data "cloudflare_zone" "main" {
 }
 
 # One record per application, from the same var.apps map as the Access applications and tunnel routes.
-# This is deliberate: you cannot add a record without also adding a rule for who may get in.
+# This is deliberate: you cannot add a record without also adding a rule for who may get in —
+# a group, or an explicit `public = true` for an app that checks a key itself.
 resource "cloudflare_dns_record" "app" {
   for_each = var.apps
 

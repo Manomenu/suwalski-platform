@@ -1,0 +1,48 @@
+# grzyby — MCP server for chatbots: "where are mushrooms now?" answered with a map.
+#
+# Path from the internet: grzyby.gugnowski.com → tunnel (NO Cloudflare Access — public = true in
+# terraform/edge/edge.auto.tfvars: chatbots call /mcp from their own servers and cannot log in)
+# → cloudflared → Traefik → Ingress in THIS namespace → nginx (web) → /mcp → server, which
+# checks the key (MCP_KEY) itself.
+#
+# The code repo and its images are public: no deploy key, no pull secret. The Secrets
+# `database` and `mcp` come from scripts/projects/grzyby/setup.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grzyby
+  namespace: argocd
+  # Deleting the Application also deletes everything it deployed — see AGENTS.md, Zasady.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/grzyby-mcp.git
+    targetRevision: master
+    path: deploy/chart
+    helm:
+      parameters:
+        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        - name: image.tag
+          value: sha-899f2e6
+        - name: server.databaseSecret
+          value: database
+        - name: server.mcpKeySecret
+          value: mcp
+        # Host from terraform/edge/edge.auto.tfvars (apps.grzyby). Must match character for
+        # character — Traefik routes by it, and the server's DNS-rebinding guard allows it.
+        - name: ingress.host
+          value: grzyby.gugnowski.com
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grzyby
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

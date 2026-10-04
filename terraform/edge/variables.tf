@@ -34,10 +34,18 @@ variable "team_name" {
 # ── What we expose ────────────────────────────────────────────────────────────
 
 variable "apps" {
-  description = "Applications exposed to the world: key = subdomain, access = group name (file access/<group>.json). → edge.auto.tfvars"
+  description = "Applications exposed to the world: key = subdomain, access = group name (file access/<group>.json), or public = true for an app that guards itself. → edge.auto.tfvars"
   type = map(object({
-    access = string
+    access = optional(string)
+    # No Cloudflare Access at all: for an endpoint called by machines, not people in a browser
+    # (an MCP server a chatbot calls from its own servers). The app must check a key itself.
+    public = optional(bool, false)
   }))
+
+  validation {
+    condition     = alltrue([for app in values(var.apps) : (app.access != null) != app.public])
+    error_message = "Every application either admits a group (access = \"<group>\") or is public = true — exactly one of the two."
+  }
 
   validation {
     condition     = alltrue([for k in keys(var.apps) : can(regex("^[a-z0-9-]+$", k))])

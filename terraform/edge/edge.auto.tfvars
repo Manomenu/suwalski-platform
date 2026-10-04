@@ -13,4 +13,9 @@ apps = {
   # its own group, "automat-operat-dev" (you and the testers), not the production group.
   # Production will be added as `automat-operat = { access = "automat-operat" }`.
   automat-operat-dev = { access = "automat-operat-dev" }
+
+  # grzyby.gugnowski.com — the MCP server for chatbots (namespace grzyby). Public: Claude and
+  # ChatGPT call /mcp from their own servers and cannot log in to Access. The app checks its
+  # own key (MCP_KEY, scripts/projects/grzyby/setup.sh); rate limiting in Cloudflare is a TODO.
+  grzyby = { public = true }
 }
