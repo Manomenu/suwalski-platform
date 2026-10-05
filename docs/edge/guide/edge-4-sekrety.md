@@ -136,9 +136,10 @@ z dokładnie tymi wierszami:
 | Account | Access: Organizations, Identity Providers, and Groups | Edit | metoda logowania One-time PIN |
 | Zone — `gugnowski.com` | DNS | Edit | rekordy aplikacji |
 | Zone — `gugnowski.com` | Zone | Read | wyszukanie strefy po nazwie (`dns.tf`) |
+| Zone — `gugnowski.com` | Zone WAF | Edit | limit zapytań do publicznych aplikacji (`ratelimit.tf`) |
 
 Do tego *Account Resources* i *Zone Resources* jak w poprzedniej sekcji. Efekt: token nie
-może dotknąć innych domen ani innych produktów Cloudflare niż te pięć rzeczy.
+może dotknąć innych domen ani innych produktów Cloudflare niż te sześć rzeczy.
 
 ## Token tunelu — najciekawszy przypadek
 
