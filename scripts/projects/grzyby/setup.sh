@@ -3,6 +3,8 @@
 #
 #   .secrets/grzyby.env  ──>  Secret mcp in namespace grzyby       (MCP_KEY — the key /mcp asks for)
 #   (generated in the cluster) ──>  Secret database in namespace grzyby  (DATABASE_URL)
+#   .secrets/grzyby.env  ──>  GitHub secret DISCORD_APP_GRZYBY_NOTIF in Manomenu/grzyby-mcp
+#                              (its daily live tests report a red run to the same channel)
 #
 # grzyby.gugnowski.com has no Cloudflare Access (public = true in terraform/edge): chatbots call
 # it from their own servers. The key is the whole protection — it goes into the connector's URL
@@ -38,6 +40,19 @@ if cluster_available; then
     # Role and database are declared in argocd/manifests/postgres/.
     database_access "$NAMESPACE" grzyby
     discord_channel app-grzyby-notif "${CURRENT[DISCORD_APP_GRZYBY_NOTIF]}"
+fi
+
+echo
+echo "== GitHub =="
+if [ "${CURRENT[DISCORD_APP_GRZYBY_NOTIF]}" = off ]; then
+    echo "  skipped: GitHub secret DISCORD_APP_GRZYBY_NOTIF (Discord off)"
+elif command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
+    # Through stdin, never as an argument.
+    printf '%s' "${CURRENT[DISCORD_APP_GRZYBY_NOTIF]}" |
+        gh secret set DISCORD_APP_GRZYBY_NOTIF --repo Manomenu/grzyby-mcp
+    echo "  GitHub secret DISCORD_APP_GRZYBY_NOTIF in Manomenu/grzyby-mcp"
+else
+    echo "  skipped: GitHub secret — gh missing or not logged in (gh auth login), then run again"
 fi
 
 echo
