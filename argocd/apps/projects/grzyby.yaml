@@ -33,7 +33,7 @@ spec:
       parameters:
         # ↓ THIS ONE LINE IS THE DEPLOYMENT.
         - name: image.tag
-          value: sha-cf359d5
+          value: sha-8fe315b
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
@@ -42,6 +42,10 @@ spec:
         # Cloudflare rate limit in terraform/edge/ratelimit.tf guard it). false = key required.
         - name: server.allowPublic
           value: "true"
+        # CARTO's key for the map's tiles (account of the owner's email; dashboard at
+        # carto.com/basemaps/apikey). Not a secret: it ships in the widget to every browser.
+        - name: server.cartoKey
+          value: cb1_4ask_1_2764b273297afc839e9e24fa
         # Host from terraform/edge/edge.auto.tfvars (apps.grzyby). Must match character for
         # character — Traefik routes by it, and the server's DNS-rebinding guard allows it.
         - name: ingress.host
