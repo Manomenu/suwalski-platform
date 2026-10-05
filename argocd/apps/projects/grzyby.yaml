@@ -38,6 +38,10 @@ spec:
           value: database
         - name: server.mcpKeySecret
           value: mcp
+        # Public: /mcp lets anyone in, the key still works (the server's limits and the
+        # Cloudflare rate limit in terraform/edge/ratelimit.tf guard it). false = key required.
+        - name: server.allowPublic
+          value: "true"
         # Host from terraform/edge/edge.auto.tfvars (apps.grzyby). Must match character for
         # character — Traefik routes by it, and the server's DNS-rebinding guard allows it.
         - name: ingress.host
