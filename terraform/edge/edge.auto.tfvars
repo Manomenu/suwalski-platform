@@ -16,6 +16,7 @@ apps = {
 
   # grzyby.gugnowski.com — the MCP server for chatbots (namespace grzyby). Public: Claude and
   # ChatGPT call /mcp from their own servers and cannot log in to Access. The app checks its
-  # own key (MCP_KEY, scripts/projects/grzyby/setup.sh); rate limiting in Cloudflare is a TODO.
+  # own key (MCP_KEY, scripts/projects/grzyby/setup.sh) — or lets anyone in when the chart's
+  # server.allowPublic is on; ratelimit.tf puts a generous per-IP fuse in front of it.
   grzyby = { public = true }
 }
