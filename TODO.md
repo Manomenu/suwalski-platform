@@ -441,3 +441,26 @@ na konto:
 2. Na telefonie znaleźć „hasło stanu Terraform” — to ono jest najważniejsze.
 3. Dać znać agentowi: odhaczy punkt „Menedżer haseł: Bitwarden” i dopisze do README, gdzie
    szukać sekretów przy odtwarzaniu środowiska.
+
+---
+
+## Środowisko w GCP (cdev): z Cloudflare i k3s na usługi samego GCP
+
+**Status:** zapisane 7.10.2026, na później. Najpierw próbne wdrożenie automat-operat na k3s
+w maszynie GCP (środowisko `cdev`, plan w artefakcie „Plan cdev”): wejście dalej przez Cloudflare
+Tunnel i Access, Argo CD dalej w domu. Ten punkt to krok **po** nim, kiedy cdev się sprawdzi
+i będzie wiadomo, czy zostajemy w GCP.
+
+Kandydaci do zastąpienia, każdy osobno i każdy tylko wtedy, gdy zysk przewyższy koszt:
+
+| Dziś (cdev) | W GCP | Co zyskujemy / ile kosztuje |
+| --- | --- | --- |
+| Cloudflare Tunnel + Access | HTTPS Load Balancer + Identity-Aware Proxy | logowanie kontami Google bez Cloudflare; LB to ok. 18 USD/mies. stałej opłaty |
+| PostgreSQL w CNPG na dysku maszyny | Cloud SQL for PostgreSQL | kopie, PITR i aktualizacje z pudełka; najmniejsza instancja ok. 10–30 USD/mies. |
+| obrazy w GHCR + pull secret | Artifact Registry | pobieranie bez tokena (konto usługi maszyny) |
+| sekrety z `setup.sh` | Secret Manager + External Secrets | sekrety bez ręcznego rozprowadzania |
+| k3s w jednej maszynie | GKE Autopilot | brak maszyny do utrzymania; płatność za pody |
+| logowanie `gcloud` właściciela | Workload Identity Federation dla GitHub Actions | `tofu apply` i wdrożenia z CI bez kluczy |
+
+Do rozstrzygnięcia przy realizacji: czy Argo CD zostaje w domu (dziś tak — decyzja właściciela),
+czy środowisko w chmurze ma działać, gdy dom leży.
