@@ -447,8 +447,8 @@ na konto:
 ## Środowisko w GCP (cdev): z Cloudflare i k3s na usługi samego GCP
 
 **Status:** zapisane 7.10.2026, na później. Najpierw próbne wdrożenie automat-operat na k3s
-w maszynie GCP (środowisko `cdev`, plan w artefakcie „Plan cdev”): wejście dalej przez Cloudflare
-Tunnel i Access, Argo CD dalej w domu. Ten punkt to krok **po** nim, kiedy cdev się sprawdzi
+w maszynie GCP (środowisko `cdev`, plan w artefakcie „Plan cdev”): baza od razu w Cloud SQL, logi
+w Cloud Logging, wejście dalej przez Cloudflare Tunnel i Access, Argo CD dalej w domu. Ten punkt to krok **po** nim, kiedy cdev się sprawdzi
 i będzie wiadomo, czy zostajemy w GCP.
 
 Kandydaci do zastąpienia, każdy osobno i każdy tylko wtedy, gdy zysk przewyższy koszt:
@@ -456,7 +456,7 @@ Kandydaci do zastąpienia, każdy osobno i każdy tylko wtedy, gdy zysk przewyż
 | Dziś (cdev) | W GCP | Co zyskujemy / ile kosztuje |
 | --- | --- | --- |
 | Cloudflare Tunnel + Access | HTTPS Load Balancer + Identity-Aware Proxy | logowanie kontami Google bez Cloudflare; LB to ok. 18 USD/mies. stałej opłaty |
-| PostgreSQL w CNPG na dysku maszyny | Cloud SQL for PostgreSQL | kopie, PITR i aktualizacje z pudełka; najmniejsza instancja ok. 10–30 USD/mies. |
+| hasło do Cloud SQL w Secrecie | logowanie IAM kontem usługi (Cloud SQL Auth Proxy jako sidecar) | brak hasła do pilnowania; zmiana w chartcie |
 | obrazy w GHCR + pull secret | Artifact Registry | pobieranie bez tokena (konto usługi maszyny) |
 | sekrety z `setup.sh` | Secret Manager + External Secrets | sekrety bez ręcznego rozprowadzania |
 | k3s w jednej maszynie | GKE Autopilot | brak maszyny do utrzymania; płatność za pody |
