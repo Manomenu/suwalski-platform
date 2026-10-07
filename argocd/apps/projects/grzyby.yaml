@@ -33,11 +33,15 @@ spec:
       parameters:
         # ↓ THIS ONE LINE IS THE DEPLOYMENT.
         - name: image.tag
-          value: sha-195ff4e
+          value: sha-1c04430
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
           value: mcp
+        # Webhook of #app-grzyby-notif for the daily check of the outside services
+        # (scripts/projects/grzyby/setup.sh creates it).
+        - name: liveCheck.discordSecret
+          value: discord
         # Public: /mcp lets anyone in, the key still works (the server's limits and the
         # Cloudflare rate limit in terraform/edge/ratelimit.tf guard it). false = key required.
         - name: server.allowPublic
