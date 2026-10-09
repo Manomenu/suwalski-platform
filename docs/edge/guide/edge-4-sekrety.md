@@ -137,9 +137,10 @@ z dokładnie tymi wierszami:
 | Zone — `gugnowski.com` | DNS | Edit | rekordy aplikacji |
 | Zone — `gugnowski.com` | Zone | Read | wyszukanie strefy po nazwie (`dns.tf`) |
 | Zone — `gugnowski.com` | Zone WAF | Edit | limit zapytań do publicznych aplikacji (`ratelimit.tf`) |
+| Zone — `gugnowski.com` | Zone Settings | Edit | „Always Use HTTPS” dla całej strefy (`zone.tf`) |
 
 Do tego *Account Resources* i *Zone Resources* jak w poprzedniej sekcji. Efekt: token nie
-może dotknąć innych domen ani innych produktów Cloudflare niż te sześć rzeczy.
+może dotknąć innych domen ani innych produktów Cloudflare niż te siedem rzeczy.
 
 ## Token tunelu — najciekawszy przypadek
 

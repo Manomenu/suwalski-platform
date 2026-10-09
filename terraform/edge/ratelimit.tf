@@ -8,7 +8,7 @@
 # 10 s block — hence the fixed numbers below. 50 requests in 10 s is about 300 a minute.
 
 locals {
-  public_hosts = [for name, app in var.apps : "${name}.${var.zone_name}" if app.public]
+  public_hosts = [for name, app in var.apps : "${name}.${var.zone_name}" if app.public && app.rate_limit]
 }
 
 resource "cloudflare_ruleset" "rate_limit" {
