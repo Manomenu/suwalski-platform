@@ -40,6 +40,9 @@ variable "apps" {
     # No Cloudflare Access at all: for an endpoint called by machines, not people in a browser
     # (an MCP server a chatbot calls from its own servers). The app must check a key itself.
     public = optional(bool, false)
+    # Left out of the public apps' rate limit (ratelimit.tf). Only for an app whose legitimate
+    # clients send bursts from one IP — and which then has to cope with that itself.
+    rate_limit = optional(bool, true)
   }))
 
   validation {

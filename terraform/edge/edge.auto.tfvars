@@ -19,4 +19,12 @@ apps = {
   # own key (MCP_KEY, scripts/projects/grzyby/setup.sh) — or lets anyone in when the chart's
   # server.allowPublic is on; ratelimit.tf puts a generous per-IP fuse in front of it.
   grzyby = { public = true }
+
+  # pomiary-lasy.gugnowski.com — the ZAI 26Z course project (namespace pomiary): sensor
+  # measurements of forests, a web dashboard and a REST API. Public: the teacher's automated
+  # tests and anyone reading call it without logging in. The app protects admin and sensor
+  # operations itself (own login with Argon2id, sensors' X-API-Key). No rate limit: the
+  # teacher's test script sends a few hundred requests in a row from one IP, and the data
+  # generator seeds hundreds of measurements — 50 per 10 s would block both and cost points.
+  pomiary-lasy = { public = true, rate_limit = false }
 }
