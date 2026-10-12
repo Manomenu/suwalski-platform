@@ -1,0 +1,52 @@
+# pomiary — ZAI 26Z course project: sensor measurements of forests, a web dashboard, a REST API.
+#
+# Path from the internet: pomiary-lasy.gugnowski.com → tunnel (NO Cloudflare Access — public = true
+# in terraform/edge/edge.auto.tfvars: the course's tests call it directly) → cloudflared → Traefik
+# → Ingress in THIS namespace → nginx (web) → /api → server, which does its own login and
+# checks the sensors' API keys.
+#
+# The code repo and its images are public: no deploy key, no pull secret (the GHCR packages
+# must be public too). The Secrets `database` and `admin` come from
+# scripts/projects/pomiary/setup.sh.
+#
+# No notification annotations: the project has no Discord channel of its own (KISS). Add
+# app-pomiary-notif subscriptions like grzyby.yaml when it gets one.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pomiary
+  namespace: argocd
+  # Deleting the Application also deletes everything it deployed — see AGENTS.md, Zasady.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/zaawansowane-aplikacje-internetowe-2026Z.git
+    targetRevision: master
+    path: deploy/chart
+    helm:
+      parameters:
+        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        - name: image.tag
+          value: sha-069dbf8
+        - name: server.databaseSecret
+          value: database
+        - name: server.adminSecret
+          value: admin
+        # Host from terraform/edge/edge.auto.tfvars (apps.pomiary-lasy). Must match character for
+        # character — Traefik routes by it.
+        - name: ingress.host
+          value: pomiary-lasy.gugnowski.com
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pomiary
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

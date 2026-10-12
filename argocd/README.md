@@ -12,7 +12,9 @@ apps/                                 Application'y — root app czyta ten katal
 │   └── postgres.yaml                 jeden współdzielony PostgreSQL: bazy i role projektów
 └── projects/                         aplikacje — po pliku na projekt i środowisko
     ├── suwalski-investing-tools.yaml namespace suw-inv-tools
-    └── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
+    ├── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
+    ├── grzyby.yaml                   serwer MCP dla chatbotów (publiczny) pod grzyby.gugnowski.com
+    └── pomiary.yaml                  projekt ZAI 26Z (publiczny, własne logowanie) pod pomiary-lasy.gugnowski.com
 manifests/                            manifesty elementów platformy, które nie mają własnego repo
 ├── cloudflared/                      para z apps/platform/cloudflared.yaml
 │   └── deployment.yaml
