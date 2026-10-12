@@ -105,3 +105,26 @@ data:
           - type: discord
             provider-override:
               webhook-url: "${DISCORD_APP_GRZYBY_NOTIF}"
+
+      # ── pomiary ─────────────────────────────────────────────────────────────────
+      # No Discord channel of its own (KISS): alerts fall back to #suw-platf-notif. A channel
+      # later = DISCORD_APP_POMIARY_NOTIF via discord_channel in scripts/projects/pomiary/setup.sh.
+      - name: pomiary — strona (z internetu)
+        group: pomiary
+        # The public address, through the whole path: the course's tests call it the same way.
+        url: "https://pomiary-lasy.gugnowski.com/healthz"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
+
+      - name: pomiary — serwer i baza
+        group: pomiary
+        # Through nginx like the browser; the server answers only once its database is up.
+        url: "http://pomiary-web.pomiary.svc.cluster.local/api/health"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord

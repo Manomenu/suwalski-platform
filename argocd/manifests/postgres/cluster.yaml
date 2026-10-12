@@ -42,3 +42,8 @@ spec:
         login: true
         passwordSecret:
           name: grzyby
+      - name: pomiary
+        ensure: present
+        login: true
+        passwordSecret:
+          name: pomiary

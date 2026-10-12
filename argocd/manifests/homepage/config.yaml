@@ -86,6 +86,10 @@ data:
             icon: mdi-mushroom-outline
             href: https://grzyby.gugnowski.com
             description: serwer MCP dla chatbotów
+        - pomiary:
+            icon: mdi-pine-tree
+            href: https://pomiary-lasy.gugnowski.com
+            description: pomiary z lasów — projekt ZAI 26Z
         - suwalski-investing-tools:
             icon: mdi-chart-line
             # The web UI; suwalski-investing-tools.k8s.suwalski.internal serves only /mcp.
