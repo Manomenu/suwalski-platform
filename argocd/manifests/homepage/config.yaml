@@ -90,6 +90,10 @@ data:
             icon: mdi-pine-tree
             href: https://pomiary-lasy.gugnowski.com
             description: pomiary z lasów — projekt ZAI 26Z
+        - suwageval:
+            icon: mdi-clipboard-check-outline
+            href: http://suwageval.k8s.suwalski.internal
+            description: ewaluacja agentów LLM (tylko sieć domowa)
         - suwalski-investing-tools:
             icon: mdi-chart-line
             # The web UI; suwalski-investing-tools.k8s.suwalski.internal serves only /mcp.

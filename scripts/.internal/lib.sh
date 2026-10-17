@@ -251,13 +251,15 @@ argo_repo_secret() {
     echo "  Secret $name in namespace argocd (repo $url): up to date"
 }
 
-# database_access NAMESPACE ROLE — the project's login to the shared PostgreSQL
+# database_access NAMESPACE ROLE [FORMAT] — the project's login to the shared PostgreSQL
 # (argocd/manifests/postgres). The password is generated once and nobody types it: it lives
 # in the Secret <ROLE with dashes> in namespace postgres, which the Cluster's managed role
 # reads, and the project gets it as DATABASE_URL in its Secret "database". The database has
 # the role's name. Values go through stdin, never the process list.
+# FORMAT: "url" (default) writes DATABASE_URL=postgresql://…; "npgsql" writes
+# ConnectionStrings__Default=Host=…;Port=…;Database=…;Username=…;Password=… for .NET apps.
 database_access() {
-    local ns="$1" role="$2" secret="${2//_/-}" password
+    local ns="$1" role="$2" format="${3:-url}" secret="${2//_/-}" password key line
     kubectl create namespace postgres --dry-run=client -o yaml | kubectl apply -f - >/dev/null
     if kubectl -n postgres get secret "$secret" >/dev/null 2>&1; then
         echo "  Secret $secret in namespace postgres: present (password kept)"
@@ -271,10 +273,24 @@ database_access() {
     fi
     password="$(kubectl -n postgres get secret "$secret" -o jsonpath='{.data.password}' | base64 -d)"
     kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-    printf 'DATABASE_URL=postgresql://%s:%s@shared-rw.postgres.svc:5432/%s\n' "$role" "$password" "$role" |
+    case "$format" in
+        url)
+            key=DATABASE_URL
+            line="postgresql://$role:$password@shared-rw.postgres.svc:5432/$role"
+            ;;
+        npgsql)
+            key=ConnectionStrings__Default
+            line="Host=shared-rw.postgres.svc;Port=5432;Database=$role;Username=$role;Password=$password"
+            ;;
+        *)
+            echo "  database_access: unknown format \"$format\" (url | npgsql)" >&2
+            return 1
+            ;;
+    esac
+    printf '%s=%s\n' "$key" "$line" |
         kubectl -n "$ns" create secret generic database --from-env-file=/dev/stdin --dry-run=client -o yaml |
         kubectl apply -f - >/dev/null
-    echo "  Secret database (DATABASE_URL) in namespace $ns: up to date"
+    echo "  Secret database ($key) in namespace $ns: up to date"
 }
 
 # access_config NAMESPACE APP — what an app's backend needs to verify the Cloudflare Access

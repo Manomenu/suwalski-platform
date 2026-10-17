@@ -47,3 +47,8 @@ spec:
         login: true
         passwordSecret:
           name: pomiary
+      - name: suwageval
+        ensure: present
+        login: true
+        passwordSecret:
+          name: suwageval
