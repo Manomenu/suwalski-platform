@@ -133,6 +133,8 @@ data:
       # Internal network only (no tunnel), so there is no "from the internet" check.
       - name: suwageval — serwer i baza
         group: suwageval
+        # Off while the deployment is switched off (enabled: "false" in argocd/apps/projects/suwageval.yaml).
+        enabled: false
         # Through nginx like the browser; the server answers only once its database is up.
         url: "http://suwageval-web.suwageval.svc.cluster.local/api/health"
         interval: 2m
