@@ -91,7 +91,8 @@ data:
             href: https://pomiary-lasy.gugnowski.com
             description: pomiary z lasów — projekt ZAI 26Z
         - suwageval:
-            icon: mdi-clipboard-check-outline
+            # The app's own favicon (Suwageval.Web/public/favicon.svg), loaded by the browser.
+            icon: http://suwageval.k8s.suwalski.internal/favicon.svg
             href: http://suwageval.k8s.suwalski.internal
             description: ewaluacja agentów LLM (tylko sieć domowa)
         - suwalski-investing-tools:
