@@ -34,13 +34,13 @@ spec:
     repoURL: https://github.com/Manomenu/suwalski-agent-eval.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 7303928655d5f8ff3bf0e23d1e966875bbe90fbf
+    targetRevision: fefae33db9eec54144ba86da6a4ff9d103bb2fa4
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-7303928
+          value: sha-fefae33
         - name: server.databaseSecret
           value: database
         - name: judgeModel.secret
