@@ -34,13 +34,18 @@ spec:
     repoURL: https://github.com/Manomenu/suwalski-agent-eval.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: b326f85af9e4098afd4f4ef7cea766f3de891f26
+    targetRevision: fe1ea635e906bfb93a19ea091642d2ee41d4e81b
     path: deploy/chart
     helm:
       parameters:
+        # OFF: switched off for now (work happens on compose and the laptop). "false" = the chart renders
+        # nothing, Argo prunes the release; the namespace, its Secrets and the database stay. Back on: "true"
+        # (and enabled: true for the gatus endpoint "suwageval — serwer i baza").
+        - name: enabled
+          value: "false"
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-b326f85
+          value: sha-fe1ea63
         - name: server.databaseSecret
           value: database
         - name: judgeModel.secret
