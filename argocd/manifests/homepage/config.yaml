@@ -83,7 +83,8 @@ data:
             href: https://automat-operat-dev.gugnowski.com
             description: operaty — wersja testowa
         - grzyby:
-            icon: mdi-mushroom-outline
+            # The app's own favicon, loaded by the browser.
+            icon: https://grzyby.gugnowski.com/favicon.svg
             href: https://grzyby.gugnowski.com
             description: serwer MCP dla chatbotów
         - pomiary:
