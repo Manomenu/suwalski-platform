@@ -72,6 +72,11 @@ ask DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF \
     "Discord webhook of #suw-platf-deployments-notif — '✅ deployed' from every environment. Enter = off" \
     "off" silent
 
+# The cluster's node on the tailnet (argocd/manifests/tailscale/), to reach machines that are only
+# there. Tailscale admin → Settings → Keys → Generate auth key (not reusable, pre-approved); used
+# once — the node keeps its identity afterwards, so an expired key does not matter.
+ask TS_AUTHKEY "Tailscale auth key for the k3s node (tskey-auth-…). Enter = keep / off" "off" silent
+
 # Start page widgets (argocd/manifests/homepage/). AdGuard has no API tokens — its widget logs
 # in with the web login. Enter = no AdGuard widget.
 ask ADGUARD_USER "AdGuard web login (Homepage's DNS widget). Enter = off" "off"
@@ -90,7 +95,7 @@ fi
 
 echo
 save_source PROXMOX_API_TOKEN SSH_PUBLIC_KEY CLOUDFLARE_API_TOKEN ACCESS_ADMIN STATE_PASSPHRASE \
-    DISCORD_SUW_PLATF_NOTIF DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF ADGUARD_USER ADGUARD_PASSWORD HOMEPAGE_PROXMOX_TOKEN
+    DISCORD_SUW_PLATF_NOTIF DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF TS_AUTHKEY ADGUARD_USER ADGUARD_PASSWORD HOMEPAGE_PROXMOX_TOKEN
 
 # ── distribution: terraform/cluster ───────────────────────────────────────────
 echo
@@ -159,6 +164,12 @@ if cluster_available; then
     # which channel is decided in git; this only says where each channel is.
     discord_channel suw-platf-notif "${CURRENT[DISCORD_SUW_PLATF_NOTIF]}"
     discord_channel suw-platf-deployments-notif "${CURRENT[DISCORD_SUW_PLATF_DEPLOYMENTS_NOTIF]}"
+
+    if [ "${CURRENT[TS_AUTHKEY]}" != off ]; then
+        secret tailscale tailscale-auth "TS_AUTHKEY=${CURRENT[TS_AUTHKEY]}"
+    else
+        echo "  skipped: Tailscale auth key (off)"
+    fi
 
     # Start page widgets: homepage-secrets, HOMEPAGE_VAR_* (argocd/manifests/homepage/config.yaml).
     if [ -n "${CURRENT[HOMEPAGE_PROXMOX_TOKEN]:-}" ]; then

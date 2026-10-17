@@ -1,0 +1,71 @@
+# tailscaled in the node's own network namespace (hostNetwork, kernel mode): the node gets a
+# tailscale0 interface and routes to the tailnet, as if tailscale were installed on it. Pods use
+# that route too — their traffic leaving the cluster is masqueraded to the node's address.
+#
+# Outbound only, deliberately:
+#   --accept-routes=false  the home subnet router advertises 192.168.0.0/24 — the node's own LAN;
+#                          accepting it would send the node's LAN traffic through the tailnet.
+#   --accept-dns=false     the node keeps its resolver (AdGuard); MagicDNS would rewrite it.
+# The identity lives in /var/lib/tailscale on the node, so a restart keeps the same machine and
+# the auth key is used only once (TS_AUTH_ONCE). A lost state = a new key in scripts/setup.sh.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tailscale
+  labels:
+    app: tailscale
+spec:
+  selector:
+    matchLabels:
+      app: tailscale
+  template:
+    metadata:
+      labels:
+        app: tailscale
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      containers:
+        - name: tailscale
+          image: ghcr.io/tailscale/tailscale:v1.102.5
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+            - name: TS_AUTH_ONCE
+              value: "true"
+            - name: TS_USERSPACE
+              value: "false"
+            # State in the node's directory, not in a Kubernetes Secret.
+            - name: TS_KUBE_SECRET
+              value: ""
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            # The tailnet machine is named after the node (k3s-1).
+            - name: TS_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: TS_EXTRA_ARGS
+              value: "--accept-routes=false --accept-dns=false"
+          # Kernel mode changes the node's routes, rules and firewall: it needs the node's powers.
+          securityContext:
+            privileged: true
+          resources:
+            requests: { cpu: 10m, memory: 48Mi }
+            limits: { memory: 192Mi }
+          volumeMounts:
+            - { name: state, mountPath: /var/lib/tailscale }
+            - { name: tun, mountPath: /dev/net/tun }
+      volumes:
+        - name: state
+          hostPath:
+            path: /var/lib/tailscale
+            type: DirectoryOrCreate
+        - name: tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice

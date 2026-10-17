@@ -9,7 +9,8 @@ apps/                                 Application'y — root app czyta ten katal
 │   ├── cloudflared.yaml              łącznik tunelu Cloudflare (terraform/edge/)
 │   ├── nas-storage.yaml              klasa storage „nas” — dysk na NAS-ie (docs/nas.md)
 │   ├── cloudnative-pg.yaml           operator PostgreSQL — chart upstream, bez manifests/
-│   └── postgres.yaml                 jeden współdzielony PostgreSQL: bazy i role projektów
+│   ├── postgres.yaml                 jeden współdzielony PostgreSQL: bazy i role projektów
+│   └── tailscale.yaml                węzeł w tailnecie — wyjście do maszyn tylko z Tailscale
 └── projects/                         aplikacje — po pliku na projekt i środowisko
     ├── suwalski-investing-tools.yaml namespace suw-inv-tools
     ├── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
@@ -21,9 +22,11 @@ manifests/                            manifesty elementów platformy, które nie
 │   └── deployment.yaml
 ├── nas-storage/                      para z apps/platform/nas-storage.yaml
 │   └── provisioner.yaml
-└── postgres/                         para z apps/platform/postgres.yaml
-    ├── cluster.yaml                  instancja „shared” na klasie nas + role projektów
-    └── databases.yaml                po bazie na projekt i środowisko
+├── postgres/                         para z apps/platform/postgres.yaml
+│   ├── cluster.yaml                  instancja „shared” na klasie nas + role projektów
+│   └── databases.yaml                po bazie na projekt i środowisko
+└── tailscale/                        para z apps/platform/tailscale.yaml
+    └── daemonset.yaml
 ```
 
 ## platform/ czy projects/
