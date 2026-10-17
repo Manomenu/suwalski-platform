@@ -35,6 +35,6 @@ mod check '.just/check.just'
 [group('operations')]
 mod secrets '.just/secrets.just'
 
-[doc('Argo CD: password and application status')]
+[doc('Argo CD: password, application status, moving a project to a commit')]
 [group('operations')]
 mod argo '.just/argo.just'

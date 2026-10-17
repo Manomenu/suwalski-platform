@@ -51,4 +51,4 @@ będziesz chciał coś zmienić — sprawdź tu, czy powód nadal obowiązuje.
 - **Ominięcie z LAN-u** — Traefik na `192.168.0.119` przyjmie żądanie z właściwym `Host`
   bez logowania. Rozwiązanie, gdyby było potrzebne: aplikacja weryfikuje JWT z
   `Cf-Access-Jwt-Assertion`.
-- **Sekrety poza gitem, ręcznie** — do czasu SOPS (`TODO.md`).
+- **Sekrety poza gitem, ręcznie** — do czasu SOPS (`docs/pomysly.md`).

@@ -126,17 +126,21 @@ file rather than by interrogating the cluster.
 [`argocd/apps/`](argocd/apps) holds one file per application, split by level:
 `platform/` for what the whole cluster shares (the Cloudflare tunnel connector) and
 `projects/` for the applications themselves. Each project file names the repo that has
-the application's Helm chart, and pins the exact image tag to run:
+the application's Helm chart, and pins two values that always change together — the exact
+commit of that repo (the chart) and the image built from the same commit:
 
 ```yaml
+targetRevision: 1c52a77e9d0b4f6a8c3e5d7f9a1b2c3d4e5f6a7b   # ← the chart: one exact commit
 helm:
   parameters:
     - name: image.tag
-      value: sha-1c52a77     # ← this one line is the deployment
+      value: sha-1c52a77                                    # ← the image of that commit
 ```
 
-Changing that line and committing *is* the release. The git history of that file is the
-deployment history — who deployed what, when, and what to roll back to.
+Changing those two lines and committing *is* the release — `just argo deploy <app>` does it
+after checking that the image exists. A commit to the application's own repo deploys nothing:
+neither its code nor its chart. The git history of that file is the deployment history — who
+deployed what, when, and what to roll back to.
 
 ![Argo CD's view of a deployed application: an Ingress, two Services, two Deployments, four ReplicaSets, two running Pods and a cache volume, all marked Healthy and Synced](docs/images/argocd-application-tree.png)
 
@@ -146,7 +150,7 @@ glance. Two ReplicaSets per Deployment is normal and not a leak: the previous on
 at zero replicas so that a rollback takes seconds instead of a rebuild.
 
 The split of responsibility is deliberate. The application repo publishes images and
-describes the *shape* of a deployment (its chart); this repo decides *which version* runs.
+describes the *shape* of a deployment (its chart); this repo decides *which version* of both runs.
 
 ## Everyday commands
 
@@ -169,6 +173,7 @@ Type `just` to see the modules, `just <module>` to see what each one can do.
 | `just argo password` | Argo CD's initial admin password, decoded |
 | `just argo apps` | Every application: in sync with git? healthy? |
 | `just argo refresh [app]` | Make Argo CD check git now instead of within ~3 minutes |
+| `just argo deploy <app> [sha]` | Move a project to a commit (default: the newest one with green CI): checks its images exist, sets `image.tag` and `targetRevision`, leaves the change to commit |
 
 A few things stay as plain scripts, because `just` cannot do them: it runs in a child
 process, so it cannot change your shell, and it cannot install itself.
@@ -202,7 +207,10 @@ one that is there. Argo CD picks it up on its own.
   appears, and why a directory beats a workspace.
 - [`docs/cheatsheet.md`](docs/cheatsheet.md) — every command this repo uses, in one
   place: tofu, kubectl, k9s, Proxmox.
-- [`TODO.md`](TODO.md) — ideas parked for later, with the reasoning behind them.
+- [`TODO.md`](TODO.md) — what is still to do, most valuable first; background and ideas without a
+  decision live in [`docs/siec-domowa-tailscale.md`](docs/siec-domowa-tailscale.md),
+  [`docs/omv-w-kodzie.md`](docs/omv-w-kodzie.md), [`docs/proxmox-jako-kod.md`](docs/proxmox-jako-kod.md),
+  [`docs/gcp-cdev.md`](docs/gcp-cdev.md) and [`docs/pomysly.md`](docs/pomysly.md).
 
 Those are written in Polish; the code and this page are not.
 

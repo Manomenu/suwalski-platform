@@ -24,3 +24,7 @@ refresh app="":
 apps:
     @kubectl --kubeconfig {{ root }}/kubeconfig -n argocd get applications \
         -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'
+
+[doc('Move a project to a commit (default: newest with green CI): checks its images exist, sets image.tag and targetRevision, leaves the change to commit')]
+deploy app sha="":
+    @{{ root }}/.just/lib/argo-deploy.sh {{ app }} {{ sha }}

@@ -37,9 +37,19 @@ while IFS= read -r line; do
     esac
 done < <(tracked 'argocd/*.yaml' | xargs grep -nE '^[[:space:]]*image:[[:space:]]*[^[:space:]]' || true)
 
+#    The chart is pinned to the same commit as the image (targetRevision = the full SHA whose
+#    first characters are in image.tag): otherwise a commit to the project's chart deploys at once,
+#    with the old image — and this repo no longer decides what runs. An Application may stay on
+#    `master` only with an `# unpinned: <reason>` comment, i.e. as a decision someone can read.
 for app in $(tracked 'argocd/apps/projects/*.yaml'); do
     tag="$(grep -A1 'name: image.tag' "$app" | sed -n 's/.*value:[[:space:]]*//p')"
     [[ "$tag" =~ ^sha-[0-9a-f]{7,}$ ]] || broken "$app: image.tag is '$tag', expected one build: sha-<commit>"
+    revision="$(sed -n 's/^[[:space:]]*targetRevision:[[:space:]]*\([^[:space:]#]*\).*/\1/p' "$app")"
+    if [[ "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+        [[ "$revision" == "${tag#sha-}"* ]] || broken "$app: targetRevision $revision is not the commit of image.tag $tag"
+    elif ! grep -qE '^[[:space:]]*# unpinned: ' "$app"; then
+        broken "$app: targetRevision is '$revision', expected the full commit SHA of image.tag $tag (or an '# unpinned: <reason>' comment)"
+    fi
 done
 
 # 3. A platform element is an Application in argocd/apps/platform/<name>.yaml and either
@@ -77,7 +87,7 @@ done
 
 # 6. Scripts run directly are executable and stop on the first error. Sourced scripts are
 #    exempt: `set -e` in them would change the caller's shell.
-SOURCED=(scripts/.internal/lib.sh scripts/cluster/kubectl-setup.sh)
+SOURCED=(scripts/.internal/lib.sh .just/lib/charts.sh scripts/cluster/kubectl-setup.sh)
 for script in $(tracked '*.sh' '.githooks/*'); do
     if [[ " ${SOURCED[*]} " == *" $script "* ]]; then continue; fi
     [ -x "$script" ] || broken "$script: not executable (chmod +x)"
@@ -114,6 +124,58 @@ while IFS=: read -r file line key; do
     [ "${#name}" -le 63 ] || broken "$file:$line: annotation name '$name' is ${#name} characters after the slash (max 63)"
 done < <(tracked 'argocd/*.yaml' | xargs grep -noE '^[[:space:]]+[a-z0-9.-]+\.[a-z]+/[A-Za-z0-9._-]+' /dev/null |
     sed -E 's/:[[:space:]]+/:/' || true)
+
+# 10. Discord channels are one list. A channel in a `notifications.argoproj.io/subscribe.<trigger>.
+#     <channel>` annotation that is not in discord_channels (terraform/platform/notifications.tf)
+#     has no Argo service — the alert silently goes nowhere. A channel in that list that no
+#     annotation and no `discord_channel <name>` call (the setup.sh that owns its webhook) uses is
+#     a dead service. Channel names hold no dots, trigger names none either.
+TF_CHANNELS="$(sed -n '/discord_channels = \[/,/\]/p' terraform/platform/notifications.tf | grep -oE '"[a-z0-9-]+"' | tr -d '"' | sort -u)"
+ANNOTATED="$(tracked 'argocd/*.yaml' | xargs grep -hE '^[[:space:]]*notifications\.argoproj\.io/subscribe\.' |
+    sed -E 's/^[[:space:]]*notifications\.argoproj\.io\/subscribe\.[^.]*\.([^:]*):.*/\1/' | sort -u || true)"
+# The calls, not the function's definition and comments in lib.sh.
+CALLED="$(tracked '*.sh' | grep -v '^scripts/.internal/lib.sh$' | xargs grep -hE '^[[:space:]]*discord_channel[[:space:]]+[a-z0-9-]+' |
+    sed -E 's/^[[:space:]]*discord_channel[[:space:]]+([a-z0-9-]+).*/\1/' | sort -u || true)"
+for channel in $ANNOTATED; do
+    grep -qxF "$channel" <<<"$TF_CHANNELS" ||
+        broken "Discord channel '$channel' is in an Application annotation but not in discord_channels (terraform/platform/notifications.tf)"
+done
+for channel in $TF_CHANNELS; do
+    grep -qxF "$channel" <<<"$ANNOTATED"$'\n'"$CALLED" ||
+        broken "Discord channel '$channel' is in discord_channels (terraform/platform/notifications.tf) but no annotation nor discord_channel call uses it"
+done
+
+# 11. Every Gatus webhook variable has an owner: ${DISCORD_<NAME>} in the Gatus config is filled by
+#     `discord_channel <name>` (scripts/.internal/lib.sh upper-cases the name, dashes to
+#     underscores, prefix DISCORD_) in some setup.sh. A variable nobody sets is empty — Gatus
+#     then falls back to the default channel or, for the default one, drops every alert.
+EXPECTED_VARS="$(for channel in $CALLED; do printf 'DISCORD_%s\n' "$(printf '%s' "$channel" | tr 'a-z-' 'A-Z_')"; done)"
+GATUS_VARS="$(grep -oE '[$][{]DISCORD_[A-Z0-9_]+[}]' argocd/manifests/gatus/config.yaml | sed -E 's/[$][{]|[}]//g' | sort -u)"
+for var in $GATUS_VARS; do
+    grep -qxF "$var" <<<"$EXPECTED_VARS" ||
+        broken "argocd/manifests/gatus/config.yaml: \${$var} matches no 'discord_channel <channel>' call in any setup.sh"
+done
+
+# 12. A project's database comes in three places that must agree: the `database_access <ns> <role>`
+#     call in its setup.sh (the password Secret and DATABASE_URL), the login role in the Cluster
+#     (cluster.yaml, managed.roles) and the Database owned by it (databases.yaml). A call without
+#     the other two leaves a Secret for a role that does not exist; a role or Database without a
+#     call has no password and no one to use it.
+CALLED_ROLES="$(tracked '*.sh' | grep -v '^scripts/.internal/lib.sh$' | xargs grep -hE '^[[:space:]]*database_access[[:space:]]' |
+    sed -E 's/^[[:space:]]*database_access[[:space:]]+[^[:space:]]+[[:space:]]+"?([A-Za-z0-9_-]+)"?.*/\1/' | sort -u || true)"
+ROLES="$(sed -n 's/^      - name:[[:space:]]*//p' argocd/manifests/postgres/cluster.yaml | sort -u)"
+# `name:` directly under spec: — the database's name (metadata.name is the dashed one).
+DATABASES="$(awk '/^---/ {spec = 0} /^spec:/ {spec = 1} spec && /^  name:/ {print $2}' argocd/manifests/postgres/databases.yaml | sort -u)"
+for role in $CALLED_ROLES; do
+    grep -qxF "$role" <<<"$ROLES" || broken "database_access ... $role: no role '$role' in argocd/manifests/postgres/cluster.yaml (managed.roles)"
+    grep -qxF "$role" <<<"$DATABASES" || broken "database_access ... $role: no Database 'name: $role' in argocd/manifests/postgres/databases.yaml"
+done
+for role in $ROLES; do
+    grep -qxF "$role" <<<"$CALLED_ROLES" || broken "argocd/manifests/postgres/cluster.yaml: role '$role' has no database_access call in any setup.sh"
+done
+for database in $DATABASES; do
+    grep -qxF "$database" <<<"$CALLED_ROLES" || broken "argocd/manifests/postgres/databases.yaml: Database '$database' has no database_access call in any setup.sh"
+done
 
 if [ "$BROKEN" -eq 0 ]; then echo "  all rules hold"; fi
 exit "$BROKEN"

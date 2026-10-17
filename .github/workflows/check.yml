@@ -25,6 +25,8 @@ env:
   SHFMT: "3.13.1"
   YAMLLINT: "1.37.1"
   KUBECONFORM: "0.8.0"
+  # home.nix has `kubernetes-helm` without a pin; this is the version nixpkgs gave on the laptop.
+  HELM: "4.2.4"
   ACTIONLINT: "1.7.12"
   GITLEAKS: "8.30.1"
   # Outside the checkout: inside it, the checks would read the providers' files as the repo's.
@@ -63,9 +65,13 @@ jobs:
           get yannh/kubeconform "v$KUBECONFORM" kubeconform-linux-amd64.tar.gz | tar -xz -C "$bin" kubeconform
           get rhysd/actionlint "v$ACTIONLINT" "actionlint_${ACTIONLINT}_linux_amd64.tar.gz" |
             tar -xz -C "$bin" actionlint
+          curl -fsSL "https://get.helm.sh/helm-v$HELM-linux-amd64.tar.gz" |
+            tar -xz -C "$bin" --strip-components=1 linux-amd64/helm
           get gitleaks/gitleaks "v$GITLEAKS" "gitleaks_${GITLEAKS}_linux_x64.tar.gz" | tar -xz -C "$bin" gitleaks
           chmod +x "$bin"/*
           pipx install --quiet "yamllint==$YAMLLINT"
+          # The chart checks (.just/lib/charts.sh) read Applications with PyYAML.
+          python3 -c 'import yaml' || sudo apt-get install -y --no-install-recommends python3-yaml
 
       # Deliberately the same command as on the laptop.
       - run: just check

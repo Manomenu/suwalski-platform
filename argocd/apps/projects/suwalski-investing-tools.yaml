@@ -4,8 +4,9 @@
 #   code repo  — publishes images and describes the SHAPE of the deployment (chart)
 #   this repo  — decides WHICH VERSION runs
 #
-# That is why `targetRevision` points to the chart branch, and `image.tag` below is pinned
-# to a specific image. The git history of this file IS the deployment history.
+# That is why `targetRevision` is one exact commit of the code repo and `image.tag` below the image
+# built from that same commit: one bump moves the chart and the image together, and a commit to the
+# chart alone deploys nothing. The git history of this file IS the deployment history.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -20,11 +21,13 @@ spec:
 
   source:
     repoURL: https://github.com/Manomenu/suwalski-investing-tools.git
-    targetRevision: master
+    # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
+    # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
+    targetRevision: 737aec82295afc7f17c676240ac1da4f65125999
     path: deploy/chart
     helm:
       parameters:
-        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
           value: sha-737aec8
 
