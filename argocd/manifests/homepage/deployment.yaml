@@ -104,10 +104,15 @@ spec:
             # ConfigMap reach the pod (within a minute), and Homepage reads its files again on
             # every request — no restart. The directory is read-only, so the logs go to stdout.
             - { name: config, mountPath: /app/config }
+            # Tile icons served by Homepage itself (icons.yaml), independent of the apps being up.
+            - { name: icons, mountPath: /app/public/icons }
       volumes:
         - name: config
           configMap:
             name: homepage-config
+        - name: icons
+          configMap:
+            name: homepage-icons
 ---
 apiVersion: v1
 kind: Service
