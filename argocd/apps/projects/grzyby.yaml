@@ -27,14 +27,13 @@ spec:
 
   source:
     repoURL: https://github.com/Manomenu/grzyby-mcp.git
-    # unpinned: master's chart differs from the one at image.tag (liveCheck.schedule) — pin: just argo deploy grzyby
-    targetRevision: master
+    targetRevision: 4ea533296889e063f2ab70cdff814aecb60c92c3
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-1c04430
+          value: sha-4ea5332
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
