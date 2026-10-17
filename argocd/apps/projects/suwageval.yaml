@@ -66,5 +66,8 @@ spec:
     automated:
       selfHeal: true
       prune: true
+      # Lets enabled: "false" (an empty render) prune the whole release; without it Argo refuses an
+      # automated sync that would delete every object ("auto-sync will wipe out all resources").
+      allowEmpty: true
     syncOptions:
       - CreateNamespace=true
