@@ -123,7 +123,8 @@ Kroki ręczne właściciela — agent ich nie wykonuje (zmiany zostają w drzewi
 - Commit i push (agent ich nie robi); po wypchnięciu Argo wdraża projekt i sam tworzy namespace.
 
 **Wyłączenie projektu na jakiś czas** (bez usuwania): parametr `enabled: "false"` w jego Application, gdy chart
-go zna (`suwageval`). Chart nie renderuje wtedy nic, Argo prunuje całe wydanie i zwalnia klaster; namespace, jego
+go zna (`suwageval`), i `allowEmpty: true` w `syncPolicy.automated` (bez niego Argo odmawia automatycznego
+synchronizowania do pustego wydania). Chart nie renderuje wtedy nic, Argo prunuje całe wydanie i zwalnia klaster; namespace, jego
 Secrety i baza zostają, bo nie należą do charta. W tym samym commicie `enabled: false` przy wpisie projektu w
 gatus, żeby nie alarmował. Powrót: `"true"` w obu miejscach.
 
