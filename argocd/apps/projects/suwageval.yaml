@@ -1,0 +1,63 @@
+# suwageval — evaluation of LLM agents: scenarios with checks, runs, results, a web app and a CLI.
+#
+# Path: http://suwageval.k8s.suwalski.internal → Traefik → Ingress in THIS namespace → nginx (web)
+# → /api → server. Home/production internal network only: the name is covered by the
+# *.k8s.suwalski.internal DNS entry that points at the node, and there is NO Cloudflare layer — no
+# tunnel, no Access, nothing in terraform/edge. Why: the app has no login of its own (it trusts the
+# network), and it calls the owner's private model server, which only exists inside that network.
+#
+# The code repo and its images are public: no deploy key, no pull secret (the GHCR packages
+# must be public too). The Secrets come from scripts/projects/suwageval/setup.sh:
+#   database     ConnectionStrings__Default (Npgsql connection string)
+#   judge-model  address and name of the judge's model (the owner's infrastructure — not in git)
+#   discord      webhook of #app-suwageval-notif for the daily judge live-check
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: suwageval
+  namespace: argocd
+  # Deleting the Application also deletes everything it deployed — see AGENTS.md, Zasady.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  # Alerts (terraform/platform/notifications.tf): failures to #app-suwageval-notif,
+  # "deployed" to #suw-platf-deployments-notif.
+  # Remove a line to silence that event for this environment.
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.app-suwageval-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.app-suwageval-notif: ""
+    notifications.argoproj.io/subscribe.on-deployed.suw-platf-deployments-notif: ""
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-agent-eval.git
+    targetRevision: master
+    path: deploy/chart
+    helm:
+      parameters:
+        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        - name: image.tag
+          value: sha-7303928
+        - name: server.databaseSecret
+          value: database
+        - name: judgeModel.secret
+          value: judge-model
+        # Webhook of #app-suwageval-notif for the daily check of the judge's model
+        # (scripts/projects/suwageval/setup.sh creates it).
+        - name: liveCheck.discordSecret
+          value: discord
+        # Internal name, resolved by AdGuard's *.k8s.suwalski.internal entry. Traefik routes by it.
+        - name: ingress.host
+          value: suwageval.k8s.suwalski.internal
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: suwageval
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

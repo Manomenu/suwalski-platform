@@ -19,6 +19,7 @@ locals {
     "app-automat-operat-notif",
     "app-automat-operat-dev-notif",
     "app-grzyby-notif",
+    "app-suwageval-notif",
   ]
 
   # Each message is Go template code that leaves its text in $msg; the body then escapes it

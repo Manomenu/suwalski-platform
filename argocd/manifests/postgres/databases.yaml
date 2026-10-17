@@ -35,3 +35,13 @@ spec:
     name: shared
   name: pomiary
   owner: pomiary
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: suwageval
+spec:
+  cluster:
+    name: shared
+  name: suwageval
+  owner: suwageval
