@@ -83,8 +83,8 @@ data:
             href: https://automat-operat-dev.gugnowski.com
             description: operaty — wersja testowa
         - grzyby:
-            # The app's own favicon, loaded by the browser.
-            icon: https://grzyby.gugnowski.com/favicon.svg
+            # A copy of the app's favicon served by Homepage (icons.yaml), shown also while the app is down.
+            icon: /icons/grzyby.svg
             href: https://grzyby.gugnowski.com
             description: serwer MCP dla chatbotów
         - pomiary:
@@ -92,8 +92,8 @@ data:
             href: https://pomiary-lasy.gugnowski.com
             description: pomiary z lasów — projekt ZAI 26Z
         - suwageval:
-            # The app's own favicon (Suwageval.Web/public/favicon.svg), loaded by the browser.
-            icon: http://suwageval.k8s.suwalski.internal/favicon.svg
+            # A copy of the app's favicon served by Homepage (icons.yaml), shown also while the app is off.
+            icon: /icons/suwageval.svg
             href: http://suwageval.k8s.suwalski.internal
             description: ewaluacja agentów LLM (tylko sieć domowa)
         - suwalski-investing-tools:
