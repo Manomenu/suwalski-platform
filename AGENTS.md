@@ -32,7 +32,9 @@ scripts/            tylko to, czego just nie zrobi: source do powłoki i sekrety
   projects/         sekrety projektów: <projekt>/[<środowisko>/]setup.sh
   .internal/        kroki i wspólne funkcje skryptów (lib.sh) — nie wołać z ręki
 .secrets/           źródła sekretów, po pliku na zakres — poza gitem
-docs/               decyzje, które nie mieszczą się w komentarzu
+docs/               decyzje i tło, które nie mieszczą się w komentarzu: nas, multiple_env, cheatsheet,
+                    siec-domowa-tailscale, omv-w-kodzie, proxmox-jako-kod, gcp-cdev, pomysly
+                    (TODO.md trzyma tylko to, co jeszcze do zrobienia — i linkuje tu po tło)
   edge/guide/       przewodnik po warstwie edge — czytać od edge-0.md
 ```
 
@@ -76,6 +78,50 @@ Wartości nie trafiają na ekran ani do argumentów poleceń — tylko przez pot
 5. Sekret, który **łatwiej odtworzyć niż przechować** (klucz deploy, token do wygenerowania
    jednym kliknięciem), może leżeć poza `*.env` — ale wtedy opisz w skrypcie, jak go odtworzyć.
 
+**Nowy projekt — po kolei:** (`<p>` — nazwa projektu, `<p>[-<env>]` — z środowiskiem, gdy jest ich kilka;
+wzór: `suwageval`, z bazą i własnym kanałem; bez bazy i kanału: `pomiary`, `suwalski-investing-tools`.)
+
+1. **Application** — `argocd/apps/projects/<p>[-<env>].yaml` ze wzoru najbliższego projektu: finalizer,
+   `repoURL`, parametry charta, `destination.namespace`; `targetRevision: master` i `image.tag: sha-0000000`
+   to tylko miejsca na wartości — wpisuje je `just argo deploy <p>[-<env>]` (pełny SHA i `sha-` + jego początek).
+   Bramka sprawdza za ciebie: finalizer, parę SHA↔tag, każdy parametr w `values.yaml` charta i render
+   (`chart-check.sh`).
+2. **Sekrety projektu** — `scripts/projects/<p>/[<env>/]setup.sh` (`chmod +x`, `set -euo pipefail`; nazwa
+   katalogu = nazwa pliku Application bez `-<env>`), po wzorze `suwageval/setup.sh`: `ask` → `save_source`
+   → `secret` / `registry_secret` w klastrze. Własny plik `.secrets/<p>[-<env>].env` powstaje sam.
+3. **Baza (opcjonalnie, gdy projekt jej potrzebuje)** — trzy miejsca naraz, które muszą się zgadzać
+   (reguła 12 w `repo-rules.sh`): rola w `argocd/manifests/postgres/cluster.yaml` (`managed.roles`,
+   `passwordSecret.name` = rola z myślnikami), `Database` w `databases.yaml` (`name` = `owner` = rola)
+   i `database_access "$NAMESPACE" <rola> [npgsql]` w `setup.sh`. Aplikacja .NET dostaje connection string
+   Npgsql (`npgsql`); inny format = nowy przypadek w `database_access` w `scripts/.internal/lib.sh`.
+4. **Własny kanał Discorda (opcjonalnie; bez niego alerty idą do `#suw-platf-notif`)** — nazwa kanału
+   w `discord_channels` w `terraform/platform/notifications.tf`, adnotacje
+   `notifications.argoproj.io/subscribe.<trigger>.<kanał>` w Application (`on-sync-failed`,
+   `on-health-degraded`; `on-deployed` idzie do `suw-platf-deployments-notif`) i `ask` +
+   `discord_channel <kanał> "$URL"` w `setup.sh`. Reguła 10 pilnuje, żeby lista, adnotacje i wywołania się
+   zgadzały (także w drugą stronę: martwy kanał oblewa bramkę).
+5. **Gatus (opcjonalnie, alert „nie odpowiada”)** — wpis w `argocd/manifests/gatus/config.yaml`: adres
+   przez Service w klastrze (`/api/health`, gdy serwer odpowiada dopiero z bazą). Własny kanał:
+   `provider-override` z `${DISCORD_<KANAŁ>}` (wielkie litery, myślniki → `_`); reguła 11 sprawdza, że
+   `discord_channel` w jakimś `setup.sh` tę zmienną ustawia.
+6. **Homepage (opcjonalnie)** — kafelek w `argocd/manifests/homepage/config.yaml`.
+7. **Z internetu (opcjonalnie)** — wpis w `apps` w `terraform/edge/edge.auto.tfvars` (`access = "<grupa>"`
+   albo `public = true`) i, dla grupy, `ask` + `write_group` w `setup.sh`; patrz `docs/edge/guide/`.
+   Tylko sieć domowa: nic w `terraform/edge` (jak `suwageval`), wystarczy wpis wieloznaczny DNS.
+8. **Opisy** — wiersz w drzewie w `argocd/README.md`; ten plik, jeśli projekt zmienia układ.
+9. **`just check`** ma przejść. Obraz musi istnieć w rejestrze przed pierwszym wdrożeniem —
+   `just argo deploy` to sprawdza.
+
+Kroki ręczne właściciela — agent ich nie wykonuje (zmiany zostają w drzewie roboczym):
+
+- **Kanał Discorda:** założyć kanał i webhook w Discordzie (to nie jest w kodzie); URL wpisze `setup.sh`.
+- **Nowy kanał na liście:** `just platform apply` (Argo dostaje nową usługę powiadomień) — dopiero po nim
+  alerty trafią na kanał; przed `plan` obejrzeć, że zmienia się tylko konfiguracja powiadomień.
+- **Uruchomić `scripts/projects/<p>/[<env>/]setup.sh`** — sekrety, hasło bazy i webhook trafiają do klastra
+  (potrzebny kubeconfig); nowy wpis z internetu: `just edge plan` → `apply`.
+- **`just secrets backup`** — kopia nowego pliku `.secrets/*.env` w Bitwardenie.
+- Commit i push (agent ich nie robi); po wypchnięciu Argo wdraża projekt i sam tworzy namespace.
+
 ### Gdzie co leży — zasady, które trzymają układ
 
 - **Terraform:** jedna konfiguracja główna na warstwę (`terraform/<warstwa>/`), z własnym
@@ -85,6 +131,11 @@ Wartości nie trafiają na ekran ani do argumentów poleceń — tylko przez pot
   w przypiętej wersji (`chart` + `targetRevision: X.Y.Z`) — wtedy bez katalogu manifestów.
   Projekt to jeden plik w `apps/projects/` (chart leży w repo projektu). `just check`
   pilnuje obu wariantów.
+- **Wdrożenie projektu to dwie wartości, zmieniane razem:** `targetRevision` (pełny SHA commita
+  repo projektu — chart) i `image.tag` (`sha-` + początek tego samego SHA — obraz). Chart na
+  `master` wdrażałby każdy commit z chartem, ze starym obrazem; to repo ma decydować, co biegnie.
+  Zmienia je `just argo deploy <aplikacja> [sha]`, nie ręka. Wyjątek (`# unpinned: <powód>` w pliku)
+  jest decyzją, nie domyślnym stanem.
 - **Bash ma trzy miejsca, każde z jednym powodem:** `.just/lib/` — implementacja recept
   (wołana przez just i przez CI); `scripts/` — tylko to, czego just nie zrobi (`source`
   do powłoki, `setup.sh` przed instalacją just); `scripts/.internal/` — kroki i funkcje
@@ -104,7 +155,8 @@ zmiany: `just check` ma przejść. Formatowanie poprawia `just check fmt`.
 | bash | shellcheck, shfmt (`-i 4 -ci`) |
 | justfile i moduły | `just --fmt --check` |
 | YAML, manifesty, CI | yamllint (`.yamllint.yaml`), kubeconform `-strict` (także CRD Argo), actionlint |
-| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`), pary apps↔manifests albo chart w przypiętej wersji, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach, pary `scripts/projects/<projekt>/` ↔ `argocd/apps/projects/<projekt>[-<środowisko>].yaml` |
+| chart każdego projektu | `.just/lib/chart-check.sh`, po jednym kroku na projekt: pobiera chart w przypiętym `targetRevision` (SHA jest w cache `~/.cache/suwalski-platform/charts/`), sprawdza, że każdy `helm.parameters[].name` jest ścieżką kluczy w `values.yaml` (Helm po cichu ignoruje literówkę), renderuje `helm template` z tymi parametrami (jak Argo: `--set`, `--set-string` przy `forceString`) i puszcza wynik przez kubeconform `-strict`. Projekt na `master` renderuje się z `master`. Prywatne repo (`automat-operat`) tylko, gdy maszyna je czyta (`gh`), inaczej krok jest **SKIP** z powodem — nigdy PASS; **w CI jest zawsze SKIP** (brak dostępu do prywatnego repo), więc ten projekt sprawdza się lokalnie |
+| zasady z tego pliku | `.just/lib/repo-rules.sh`: finalizer w projektach, przypięte obrazy (`sha-…`, bez `latest`) i chart projektu przypięty do tego samego commita (`targetRevision` = pełny SHA zaczynający się od `image.tag`), pary apps↔manifests albo chart w przypiętej wersji, brak maili (repo publiczne — w przykładach `@example.com`), moduły podpięte w justfile, `set -euo pipefail` w skryptach, pary `scripts/projects/<projekt>/` ↔ `argocd/apps/projects/<projekt>[-<środowisko>].yaml`, kanały Discorda (`discord_channels` ↔ adnotacje ↔ `discord_channel` w `setup.sh`, bez martwych), zmienne `${DISCORD_…}` Gatusa ↔ `discord_channel`, bazy (`database_access` ↔ rola w `cluster.yaml` ↔ `Database` w `databases.yaml`) |
 | sekrety | gitleaks na całej historii i na niezacommitowanych zmianach |
 
 `just check live` sprawdza żywe środowisko: plan każdej warstwy bez zmian (dryf = ktoś
@@ -113,7 +165,7 @@ sieci domowej i sekretów, więc nie biegnie w CI.
 
 **Nowa zasada z tego pliku, którą da się sprawdzić maszynowo, trafia też do
 `repo-rules.sh`.** Wersje narzędzi w CI są przypięte w `check.yml` i mają odpowiadać tym
-z dotfiles (`home.nix`) — podbijamy je razem.
+z dotfiles (`home.nix`) — podbijamy je razem (helm: `home.nix` go nie przypina, w CI jest wersja, którą dał nixpkgs).
 
 ## Warstwy wartości
 

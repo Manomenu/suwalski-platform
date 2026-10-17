@@ -18,17 +18,22 @@ CRD_SCHEMAS='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Gro
 declare -a REPORT
 FAILED=0
 
+# A step exits 0 (PASS), 3 (SKIP: it cannot run on this machine and says why) or anything
+# else (FAIL). A skip is never counted as a pass, but it does not fail the gate either.
 run_step() {
-    local name="$1"
+    local name="$1" code=0
     shift
     echo
     echo "==> $name"
-    if "$@"; then
-        REPORT+=("PASS  $name")
-    else
-        REPORT+=("FAIL  $name")
-        FAILED=1
-    fi
+    "$@" || code=$?
+    case "$code" in
+        0) REPORT+=("PASS  $name") ;;
+        3) REPORT+=("SKIP  $name") ;;
+        *)
+            REPORT+=("FAIL  $name")
+            FAILED=1
+            ;;
+    esac
 }
 
 # A step that needs a tool nobody installed is a failure, not a silent skip: the gate
@@ -136,6 +141,13 @@ workflows() {
     require actionlint && (cd "$ROOT" && actionlint)
 }
 
+# One project's Application against its chart at the pinned revision (chart-check.sh): the
+# parameters exist in values.yaml, the chart renders, the result passes kubeconform. SKIP for a
+# private repo this machine cannot read — in CI, always automat-operat.
+project_chart() {
+    "$ROOT/.just/lib/chart-check.sh" "$ROOT/$1"
+}
+
 repo_rules() {
     "$ROOT/.just/lib/repo-rules.sh"
 }
@@ -202,6 +214,9 @@ case "${1:-offline}" in
         run_step "yaml lint (yamllint)" yaml_lint
         run_step "manifests vs Kubernetes schemas (kubeconform)" manifests
         run_step "CI workflows (actionlint)" workflows
+        for app in $(tracked 'argocd/apps/projects/*.yaml'); do
+            run_step "project chart: $(basename "$app" .yaml) (parameters, helm template, kubeconform)" project_chart "$app"
+        done
         run_step "repo rules (AGENTS.md)" repo_rules
         run_step "secrets in git (gitleaks)" secrets
         ;;

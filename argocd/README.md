@@ -51,15 +51,24 @@ kroku `apply` i nie powinno być. Jeśli ma być dostępna z internetu, dopisz j
 
 ## Jak wdrożyć nową wersję
 
-Zmień `image.tag` w pliku aplikacji i wypchnij. To **jedyna** zmiana potrzebna do
-wdrożenia — i dlatego `git log` na tym pliku jest historią wdrożeń, a `git revert`
-wycofaniem.
+Wdrożenie to **dwie wartości w pliku aplikacji, zmieniane razem**: `targetRevision` (pełny SHA
+commita repo projektu — z niego bierze się chart) i `image.tag` (`sha-` + pierwsze 7 znaków
+tego samego commita — obraz). Robi to `just argo deploy <aplikacja> [sha]`: sprawdza, że obrazy
+tego commita istnieją w rejestrze, ustawia obie wartości i zostawia zmianę do commita;
+potem commit i push. Ręczna zmiana jednej wartości jest błędem — `just check` (reguła w
+`repo-rules.sh`) wymaga, żeby SHA zaczynał się od taga. I dlatego `git log` na tym pliku jest
+historią wdrożeń, a `git revert` wycofaniem — kodu i charta naraz.
 
-Elementy platformy z `manifests/` aktualizuje się tak samo: zmiana wersji obrazu
-w manifeście, commit, push.
+Wyjątek: Application może zostać na `targetRevision: master` tylko z komentarzem
+`# unpinned: <powód>` (decyzja, którą da się przeczytać).
+
+Elementy platformy z `manifests/` aktualizuje się prościej: zmiana wersji obrazu
+w manifeście, commit, push (manifesty leżą w tym repo, więc nie ma osobnego charta do przypięcia).
 
 ## Czemu to repo, a nie repo z kodem
 
-Chart mieszka przy kodzie, bo kształt wdrożenia zmienia się razem z nim. Ale **wersja
-jest stanem środowiska**, nie kodu. Gdyby numer leżał w repo z kodem, każdy commit
-z kodem byłby wdrożeniem — i znikłaby różnica między „przetestowane" a „uruchomione".
+Chart mieszka przy kodzie, bo kształt wdrożenia zmienia się razem z nim — ale **która jego
+wersja biegnie, jest stanem środowiska**, nie kodu. Gdyby `targetRevision` wskazywał gałąź
+`master`, każdy commit z chartem byłby wdrożeniem (ze starym obrazem), i znikłaby różnica
+między „przetestowane" a „uruchomione". Dlatego chart jest przypięty do commita, tak samo
+jak obraz.

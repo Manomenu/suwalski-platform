@@ -29,11 +29,13 @@ spec:
   source:
     # SSH, not https: the repo-automat-operat Secret matches the Application by URL, character for character.
     repoURL: git@github.com:Manomenu/automat-operat.git
-    targetRevision: master
+    # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
+    # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
+    targetRevision: 9b959718b523c7a2b448f2b53548338b6d57791a
     path: deploy/chart
     helm:
       parameters:
-        # ↓ THIS ONE LINE IS THE DEPLOYMENT.
+        # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
           value: sha-9b95971
         # docker-registry Secret from setup.sh — images of a private repo are private.

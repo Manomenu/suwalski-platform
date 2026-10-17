@@ -16,7 +16,7 @@
 #   * the tunnel token does not come from .secrets/ but from the terraform/edge output — it is
 #     created by `just edge apply`. That is why you run this script again after the first edge apply.
 #
-# ⚠ Temporary. Eventually the secrets should live in git, encrypted — see TODO.md.
+# ⚠ Temporary. Eventually the secrets should live in git, encrypted — see docs/pomysly.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/.internal/lib.sh"

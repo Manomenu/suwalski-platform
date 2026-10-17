@@ -95,9 +95,9 @@ locals {
         - when: app.status.health.status == 'Degraded'
           send: [app-health-degraded]
       EOT
-      # Once per set of images: a deployment here is a new image tag set in the platform repo,
-      # while the chart's git revision stays the same — and a code commit that changes nothing
-      # in the cluster moves the revision without deploying anything.
+      # Once per set of images: a deployment here is a new image tag set in the platform repo
+      # (together with the chart's commit, targetRevision). A re-sync of the same images, or a
+      # change of the chart alone, must not announce a deployment again.
       "trigger.on-deployed" = <<-EOT
         - when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
           oncePer: join(app.status.summary.images, ",")

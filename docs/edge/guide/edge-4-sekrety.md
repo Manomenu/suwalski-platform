@@ -169,7 +169,7 @@ dla `suwalski-sec` — nowa rzecz nie wprowadza nowego mechanizmu.
 
 ### Czemu nie w gicie, zaszyfrowany?
 
-Docelowo tak — `TODO.md` opisuje SOPS + age dla wszystkich sekretów repo. Do tego czasu
+Docelowo tak — `docs/pomysly.md` opisuje SOPS + age dla wszystkich sekretów repo. Do tego czasu
 token idzie tą samą drogą co pozostałe sekrety.
 
 ## Stan Terraforma też jest wrażliwy
