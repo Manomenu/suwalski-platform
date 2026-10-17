@@ -13,7 +13,7 @@ terraform/
   platform/         Argo CD + aplikacja korzeniowa        (osobna konfiguracja główna)
   edge/             Cloudflare: tunel, DNS, Access        (osobna konfiguracja główna)
 argocd/
-  apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage, cloudnative-pg, postgres)
+  apps/platform/    Application'y wspólne dla klastra: <element>.yaml (cloudflared, nas-storage, cloudnative-pg, postgres, tailscale)
   apps/projects/    Application'y projektów — po pliku na projekt i środowisko
   manifests/        manifesty elementów platformy: <element>/ — para z apps/platform/<element>.yaml
                     (m.in. gatus/ — alerty, homepage/ — strona startowa hub.k8s.suwalski.internal)

@@ -61,6 +61,9 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            # /app/config is the read-only ConfigMap (volumeMounts below): no log file there.
+            - name: LOG_TARGETS
+              value: stdout
             # The names it may be opened under: the start page, the Service (Gatus checks it
             # there) and the pod IP (the probes). Anything else gets 400.
             - name: HOMEPAGE_ALLOWED_HOSTS
@@ -97,23 +100,14 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           volumeMounts:
-            # Each file on its own: /app/config must stay writable for the logs directory.
-            - { name: config, mountPath: /app/config/kubernetes.yaml, subPath: kubernetes.yaml }
-            - { name: config, mountPath: /app/config/settings.yaml, subPath: settings.yaml }
-            - { name: config, mountPath: /app/config/widgets.yaml, subPath: widgets.yaml }
-            - { name: config, mountPath: /app/config/services.yaml, subPath: services.yaml }
-            - { name: config, mountPath: /app/config/bookmarks.yaml, subPath: bookmarks.yaml }
-            - { name: config, mountPath: /app/config/docker.yaml, subPath: docker.yaml }
-            - { name: config, mountPath: /app/config/proxmox.yaml, subPath: proxmox.yaml }
-            - { name: config, mountPath: /app/config/custom.css, subPath: custom.css }
-            - { name: config, mountPath: /app/config/custom.js, subPath: custom.js }
-            - { name: logs, mountPath: /app/config/logs }
+            # The whole directory, not file by file (subPath): only then does a change of the
+            # ConfigMap reach the pod (within a minute), and Homepage reads its files again on
+            # every request — no restart. The directory is read-only, so the logs go to stdout.
+            - { name: config, mountPath: /app/config }
       volumes:
         - name: config
           configMap:
             name: homepage-config
-        - name: logs
-          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,36 @@
+# Tailscale on the cluster's node — the way out to machines that are only on the tailnet (the
+# judge model of suwageval). The node joins the tailnet as a machine of its own; pods reach
+# 100.x addresses through it, because flannel masquerades pod traffic that leaves the cluster.
+#
+# Manifests in THIS repo (argocd/manifests/tailscale/), like gatus: a piece of the platform.
+# A DaemonSet in the node's network rather than tailscale in the VM's cloud-init: a change of the
+# VM's user-data makes Terraform rebuild the whole k3s machine.
+# The auth key is NOT in git: the tailscale-auth Secret comes from scripts/setup.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale
+  namespace: argocd
+  # Alerts (terraform/platform/notifications.tf): failures to #suw-platf-notif.
+  # Remove a line to silence that event for this environment.
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.suw-platf-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.suw-platf-notif: ""
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/tailscale
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
