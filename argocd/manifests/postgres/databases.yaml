@@ -45,3 +45,13 @@ spec:
     name: shared
   name: suwageval
   owner: suwageval
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: suwinvtools
+spec:
+  cluster:
+    name: shared
+  name: suwinvtools
+  owner: suwinvtools

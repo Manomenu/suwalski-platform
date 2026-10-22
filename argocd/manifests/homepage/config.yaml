@@ -99,8 +99,8 @@ data:
         - suwalski-investing-tools:
             icon: mdi-chart-line
             # The web UI; suwalski-investing-tools.k8s.suwalski.internal serves only /mcp.
-            href: http://rdcf.k8s.suwalski.internal
-            description: narzędzia inwestycyjne (MCP pod suwalski-investing-tools.k8s…/mcp)
+            href: http://suwinvtools.k8s.suwalski.internal
+            description: reverse DCF i sygnały końca hossy na AI (MCP pod suwalski-investing-tools.k8s…/mcp)
     - Dom:
         - AdGuard:
             icon: adguard-home.svg

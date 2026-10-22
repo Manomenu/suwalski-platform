@@ -23,13 +23,21 @@ spec:
     repoURL: https://github.com/Manomenu/suwalski-investing-tools.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 737aec82295afc7f17c676240ac1da4f65125999
+    targetRevision: ac8b37b2ea682543a6b6b4d57b6612a568842831
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-737aec8
+          value: sha-ac8b37b
+        # DATABASE_URL in the shared Postgres (role and database suwinvtools) —
+        # scripts/projects/suwalski-investing-tools/setup.sh creates it.
+        - name: server.databaseSecret
+          value: database
+        # Webhooks of the signals' Discord channels and the model the monthly job asks —
+        # the same setup.sh creates it. Private infrastructure, so a Secret, not a parameter.
+        - name: signals.secret
+          value: signals
 
   destination:
     server: https://kubernetes.default.svc
