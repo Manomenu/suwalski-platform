@@ -79,7 +79,7 @@ Wartości nie trafiają na ekran ani do argumentów poleceń — tylko przez pot
    jednym kliknięciem), może leżeć poza `*.env` — ale wtedy opisz w skrypcie, jak go odtworzyć.
 
 **Nowy projekt — po kolei:** (`<p>` — nazwa projektu, `<p>[-<env>]` — z środowiskiem, gdy jest ich kilka;
-wzór: `suwageval`, z bazą i własnym kanałem; bez bazy i kanału: `pomiary`, `suwalski-investing-tools`.)
+wzór: `suwageval`, z bazą i własnym kanałem; z bazą, bez kanału alertów: `suwalski-investing-tools`; bez bazy i kanału: `pomiary`.)
 
 1. **Application** — `argocd/apps/projects/<p>[-<env>].yaml` ze wzoru najbliższego projektu: finalizer,
    `repoURL`, parametry charta, `destination.namespace`; `targetRevision: master` i `image.tag: sha-0000000`
