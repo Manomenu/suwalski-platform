@@ -25,7 +25,7 @@ spec:
       containers:
         - name: cloudflared
           # Pinned version, like everything in this repo. Newer one: change it here, commit, push.
-          image: cloudflare/cloudflared:2026.9.3
+          image: cloudflare/cloudflared:2026.10.4
           args:
             - tunnel
             # The image is updated by changing this file, not by itself at runtime.
