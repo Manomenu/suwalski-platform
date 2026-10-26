@@ -23,13 +23,13 @@ spec:
     repoURL: https://github.com/Manomenu/suwalski-investing-tools.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: ac8b37b2ea682543a6b6b4d57b6612a568842831
+    targetRevision: 8fcc402efe73daa65da66cbfa9218f2849c7c0b8
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-ac8b37b
+          value: sha-8fcc402
         # DATABASE_URL in the shared Postgres (role and database suwinvtools) —
         # scripts/projects/suwalski-investing-tools/setup.sh creates it.
         - name: server.databaseSecret

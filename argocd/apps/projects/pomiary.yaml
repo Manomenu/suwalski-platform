@@ -26,13 +26,13 @@ spec:
     repoURL: https://github.com/Manomenu/zaawansowane-aplikacje-internetowe-2026Z.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 069dbf8dbd923739566560619436064e134f9480
+    targetRevision: 2d720aabb41f45e6828a859898022826f82256b0
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-069dbf8
+          value: sha-2d720aa
         - name: server.databaseSecret
           value: database
         - name: server.adminSecret

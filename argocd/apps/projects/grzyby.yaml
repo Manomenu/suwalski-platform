@@ -27,13 +27,13 @@ spec:
 
   source:
     repoURL: https://github.com/Manomenu/grzyby-mcp.git
-    targetRevision: 4ea533296889e063f2ab70cdff814aecb60c92c3
+    targetRevision: 8500960429874425d2b6d7cab74faab0bcfb762e
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-4ea5332
+          value: sha-8500960
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
