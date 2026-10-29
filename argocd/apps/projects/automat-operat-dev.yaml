@@ -47,6 +47,9 @@ spec:
           value: database
         - name: server.accessConfigMap
           value: cloudflare-access
+        # Secret geoapify (GEOAPIFY_API_KEY) from the same setup.sh.
+        - name: server.geoapifySecret
+          value: geoapify
         # Host from terraform/edge/edge.auto.tfvars (apps.automat-operat-dev). Must match
         # character for character — otherwise Traefik answers 404 even though login and the tunnel work.
         - name: ingress.host

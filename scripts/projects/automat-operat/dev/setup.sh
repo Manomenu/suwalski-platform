@@ -4,6 +4,7 @@
 #   .secrets/automat-operat-dev.env  ──>  terraform/edge/access/automat-operat-dev.json  (group "automat-operat-dev")
 #   .secrets/automat-operat.env      ──>  Secret ghcr-pull in namespace automat-operat-dev  (project token)
 #   (generated in the cluster)       ──>  Secret database in namespace automat-operat-dev   (DATABASE_URL)
+#   .secrets/automat-operat-dev.env  ──>  Secret geoapify in namespace automat-operat-dev   (GEOAPIFY_API_KEY)
 #   terraform/edge outputs           ──>  ConfigMap cloudflare-access in automat-operat-dev (login check)
 #
 # Access to automat-operat-dev.gugnowski.com is granted by dev's OWN group, "automat-operat-dev":
@@ -43,8 +44,11 @@ ask ACCESS_AUTOMAT_OPERAT_DEV \
 ask DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF \
     "Discord webhook of #app-automat-operat-dev-notif — alerts of automat-operat-dev. Enter = off" \
     "off" silent
+ask GEOAPIFY_API_KEY \
+    "Geoapify API key — https://myprojects.geoapify.com → project → API key." \
+    "" silent
 echo
-save_source ACCESS_AUTOMAT_OPERAT_DEV DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF
+save_source ACCESS_AUTOMAT_OPERAT_DEV GEOAPIFY_API_KEY DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF
 
 echo
 echo "== terraform/edge =="
@@ -58,6 +62,7 @@ if cluster_available; then
     # Role and database are declared in argocd/manifests/postgres/.
     database_access "$NAMESPACE" automat_operat_dev
     access_config "$NAMESPACE" automat-operat-dev
+    secret "$NAMESPACE" geoapify "GEOAPIFY_API_KEY=${CURRENT[GEOAPIFY_API_KEY]}"
     discord_channel app-automat-operat-dev-notif "${CURRENT[DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF]}"
 fi
 
