@@ -37,6 +37,9 @@ spec:
         app: traggo
     spec:
       automountServiceAccountToken: false
+      # Kubernetes would set TRAGGO_PORT=tcp://… for the Service named traggo, and Traggo reads
+      # TRAGGO_PORT as its own port number — it exits on start.
+      enableServiceLinks: false
       securityContext:
         fsGroup: 1000
       containers:
