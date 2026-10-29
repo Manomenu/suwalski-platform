@@ -1,0 +1,33 @@
+# Traggo — tag-based time tracking (work hours for clients): http://traggo.k8s.suwalski.internal
+# (home network only, like Argo).
+#
+# Manifests in THIS repo (argocd/manifests/traggo/), like Gatus: an upstream image, not our code.
+# The admin password is in deployment.yaml on purpose (home network only).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traggo
+  namespace: argocd
+  # Alerts (terraform/platform/notifications.tf): failures to #suw-platf-notif.
+  # Remove a line to silence that event for this environment.
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.suw-platf-notif: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.suw-platf-notif: ""
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Manomenu/suwalski-platform.git
+    targetRevision: master
+    path: argocd/manifests/traggo
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traggo
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

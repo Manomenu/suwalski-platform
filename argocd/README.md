@@ -10,7 +10,8 @@ apps/                                 Application'y — root app czyta ten katal
 │   ├── nas-storage.yaml              klasa storage „nas” — dysk na NAS-ie (docs/nas.md)
 │   ├── cloudnative-pg.yaml           operator PostgreSQL — chart upstream, bez manifests/
 │   ├── postgres.yaml                 jeden współdzielony PostgreSQL: bazy i role projektów
-│   └── tailscale.yaml                węzeł w tailnecie — wyjście do maszyn tylko z Tailscale
+│   ├── tailscale.yaml                węzeł w tailnecie — wyjście do maszyn tylko z Tailscale
+│   └── traggo.yaml                   czas pracy dla klientów (tylko sieć domowa) pod traggo.k8s.suwalski.internal
 └── projects/                         aplikacje — po pliku na projekt i środowisko
     ├── suwalski-investing-tools.yaml namespace suw-inv-tools
     ├── automat-operat-dev.yaml       automat-operat (prywatne repo) pod automat-operat-dev.gugnowski.com
@@ -25,8 +26,10 @@ manifests/                            manifesty elementów platformy, które nie
 ├── postgres/                         para z apps/platform/postgres.yaml
 │   ├── cluster.yaml                  instancja „shared” na klasie nas + role projektów
 │   └── databases.yaml                po bazie na projekt i środowisko
-└── tailscale/                        para z apps/platform/tailscale.yaml
-    └── daemonset.yaml
+├── tailscale/                        para z apps/platform/tailscale.yaml
+│   └── daemonset.yaml
+└── traggo/                           para z apps/platform/traggo.yaml
+    └── deployment.yaml               Traggo + wolumen z bazą SQLite na klasie nas
 ```
 
 ## platform/ czy projects/

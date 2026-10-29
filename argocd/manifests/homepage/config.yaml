@@ -101,6 +101,10 @@ data:
             # The web UI; suwalski-investing-tools.k8s.suwalski.internal serves only /mcp.
             href: http://suwinvtools.k8s.suwalski.internal
             description: reverse DCF i sygnały końca hossy na AI (MCP pod suwalski-investing-tools.k8s…/mcp)
+        - Traggo:
+            icon: mdi-timer-outline
+            href: http://traggo.k8s.suwalski.internal
+            description: czas pracy dla klientów (tylko sieć domowa)
     - Dom:
         - AdGuard:
             icon: adguard-home.svg

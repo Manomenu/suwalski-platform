@@ -1,0 +1,114 @@
+# Traggo — time tracking at http://traggo.k8s.suwalski.internal (home network only).
+#
+# One container, the data is one SQLite file on the NAS disk (storage class "nas"). SQLite is the
+# dialect Traggo documents (https://traggo.net/config/); a single writer, hence one replica and
+# Recreate — two pods must never open the file at once.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: traggo-data
+  annotations:
+    # The tracked hours outlive the Application: deleting or renaming it leaves the volume
+    # (and the class keeps the disk anyway — reclaimPolicy: Retain, docs/nas.md).
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  storageClassName: nas
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traggo
+  labels:
+    app: traggo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: traggo
+  template:
+    metadata:
+      labels:
+        app: traggo
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: traggo
+          image: docker.io/traggo/server:0.8.3
+          env:
+            # Used only on the first start, when the database has no user yet: it creates "admin"
+            # with this password. Changing it later is done in the app (Settings → Users), not here.
+            # In git on purpose: the app is reachable only from the home network, by its owner.
+            - name: TRAGGO_DEFAULT_USER_PASS
+              value: 123QWEasd
+            # The default, relative to the image's working directory /opt/traggo — the volume below.
+            - name: TRAGGO_DATABASE_CONNECTION
+              value: data/traggo.db
+          ports:
+            - name: http
+              containerPort: 3030
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - { name: data, mountPath: /opt/traggo/data }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: traggo-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traggo
+spec:
+  selector:
+    app: traggo
+  ports:
+    - port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: traggo
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: traggo.k8s.suwalski.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: traggo
+                port:
+                  number: 80

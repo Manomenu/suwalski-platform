@@ -69,6 +69,15 @@ data:
         alerts:
           - type: discord
 
+      - name: Traggo (czas pracy)
+        group: platforma
+        url: "http://traggo.traggo.svc.cluster.local/"
+        interval: 2m
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
+
       # ── automat-operat-dev ─────────────────────────────────────────────────────
       - name: automat-operat-dev — strona
         group: automat-operat-dev
