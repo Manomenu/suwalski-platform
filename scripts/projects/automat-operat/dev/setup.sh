@@ -5,6 +5,7 @@
 #   .secrets/automat-operat.env      ──>  Secret ghcr-pull in namespace automat-operat-dev  (project token)
 #   (generated in the cluster)       ──>  Secret database in namespace automat-operat-dev   (DATABASE_URL)
 #   .secrets/automat-operat-dev.env  ──>  Secret geoapify in namespace automat-operat-dev   (GEOAPIFY_API_KEY)
+#   .secrets/automat-operat-dev.env  ──>  Secret openrouter in namespace automat-operat-dev (OPENROUTER_API_KEY)
 #   terraform/edge outputs           ──>  ConfigMap cloudflare-access in automat-operat-dev (login check)
 #
 # Access to automat-operat-dev.gugnowski.com is granted by dev's OWN group, "automat-operat-dev":
@@ -47,8 +48,11 @@ ask DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF \
 ask GEOAPIFY_API_KEY \
     "Geoapify API key — https://myprojects.geoapify.com → project → API key." \
     "" silent
+ask OPENROUTER_API_KEY \
+    "OpenRouter API key (vision model for \"Wygeneruj ze zdjęć\") — https://openrouter.ai/keys." \
+    "" silent
 echo
-save_source ACCESS_AUTOMAT_OPERAT_DEV GEOAPIFY_API_KEY DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF
+save_source ACCESS_AUTOMAT_OPERAT_DEV GEOAPIFY_API_KEY OPENROUTER_API_KEY DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF
 
 echo
 echo "== terraform/edge =="
@@ -63,6 +67,7 @@ if cluster_available; then
     database_access "$NAMESPACE" automat_operat_dev
     access_config "$NAMESPACE" automat-operat-dev
     secret "$NAMESPACE" geoapify "GEOAPIFY_API_KEY=${CURRENT[GEOAPIFY_API_KEY]}"
+    secret "$NAMESPACE" openrouter "OPENROUTER_API_KEY=${CURRENT[OPENROUTER_API_KEY]}"
     discord_channel app-automat-operat-dev-notif "${CURRENT[DISCORD_APP_AUTOMAT_OPERAT_DEV_NOTIF]}"
 fi
 
