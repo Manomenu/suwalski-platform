@@ -31,13 +31,13 @@ spec:
     repoURL: git@github.com:Manomenu/automat-operat.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 9b959718b523c7a2b448f2b53548338b6d57791a
+    targetRevision: 59558b6f68c5c61f4f6933ffed774c2595290df9
     path: deploy/chart
     helm:
       parameters:
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-9b95971
+          value: sha-59558b6
         # docker-registry Secret from setup.sh — images of a private repo are private.
         - name: image.pullSecret
           value: ghcr-pull
