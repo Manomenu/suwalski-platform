@@ -23,13 +23,17 @@ spec:
     repoURL: https://github.com/Manomenu/suwalski-investing-tools.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 8fcc402efe73daa65da66cbfa9218f2849c7c0b8
+    targetRevision: 0f3ec63898eeca5a4709366e082f5ec6f5bf1989
     path: deploy/chart
     helm:
       parameters:
+        # OFF: switched off for now. "false" = the chart renders nothing, Argo prunes the release; the
+        # namespace, its Secrets and the database stay. Back on: "true".
+        - name: enabled
+          value: "false"
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-8fcc402
+          value: sha-0f3ec63
         # DATABASE_URL in the shared Postgres (role and database suwinvtools) —
         # scripts/projects/suwalski-investing-tools/setup.sh creates it.
         - name: server.databaseSecret
@@ -53,6 +57,9 @@ spec:
       # Delete objects that disappeared from git — otherwise something removed from the chart
       # would stay in the cluster forever. The PVC is excluded from this by an annotation.
       prune: true
+      # Lets enabled: "false" (an empty render) prune the whole release; without it Argo refuses an
+      # automated sync that would delete every object ("auto-sync will wipe out all resources").
+      allowEmpty: true
     syncOptions:
       # Argo creates the namespace. The suwalski-sec Secret is put into it by
       # scripts/projects/suwalski-investing-tools/setup.sh — which also creates it if needed.

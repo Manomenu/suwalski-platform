@@ -27,13 +27,17 @@ spec:
 
   source:
     repoURL: https://github.com/Manomenu/grzyby-mcp.git
-    targetRevision: 8500960429874425d2b6d7cab74faab0bcfb762e
+    targetRevision: 5fd3fbfba97e6c013ca8c89fe995cf3c55ae6e96
     path: deploy/chart
     helm:
       parameters:
+        # OFF: switched off for now. "false" = the chart renders nothing, Argo prunes the release; the
+        # namespace, its Secrets and the database stay. Back on: "true" (and enabled: true for its gatus endpoint).
+        - name: enabled
+          value: "false"
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-8500960
+          value: sha-5fd3fbf
         - name: server.databaseSecret
           value: database
         - name: server.mcpKeySecret
@@ -63,5 +67,8 @@ spec:
     automated:
       selfHeal: true
       prune: true
+      # Lets enabled: "false" (an empty render) prune the whole release; without it Argo refuses an
+      # automated sync that would delete every object ("auto-sync will wipe out all resources").
+      allowEmpty: true
     syncOptions:
       - CreateNamespace=true

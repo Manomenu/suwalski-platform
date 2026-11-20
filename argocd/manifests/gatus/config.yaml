@@ -106,6 +106,8 @@ data:
       # ── grzyby ──────────────────────────────────────────────────────────────────
       - name: grzyby — serwer
         group: grzyby
+        # Off while the deployment is switched off (enabled: "false" in argocd/apps/projects/grzyby.yaml).
+        enabled: false
         url: "http://grzyby-web.grzyby.svc.cluster.local/api/health"
         interval: 2m
         conditions:
@@ -120,6 +122,8 @@ data:
       # later = DISCORD_APP_POMIARY_NOTIF via discord_channel in scripts/projects/pomiary/setup.sh.
       - name: pomiary — strona (z internetu)
         group: pomiary
+        # Off while the deployment is switched off (enabled: "false" in argocd/apps/projects/pomiary.yaml).
+        enabled: false
         # The public address, through the whole path: the course's tests call it the same way.
         url: "https://pomiary-lasy.gugnowski.com/healthz"
         interval: 2m
@@ -130,6 +134,8 @@ data:
 
       - name: pomiary — serwer i baza
         group: pomiary
+        # Off while the deployment is switched off (enabled: "false" in argocd/apps/projects/pomiary.yaml).
+        enabled: false
         # Through nginx like the browser; the server answers only once its database is up.
         url: "http://pomiary-web.pomiary.svc.cluster.local/api/health"
         interval: 2m

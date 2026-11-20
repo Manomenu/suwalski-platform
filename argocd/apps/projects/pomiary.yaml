@@ -26,13 +26,17 @@ spec:
     repoURL: https://github.com/Manomenu/zaawansowane-aplikacje-internetowe-2026Z.git
     # ↓ THE DEPLOYMENT IS TWO VALUES, CHANGED TOGETHER: this commit (the chart) and image.tag below
     # (its image, sha-<first 7 characters of the commit>). `just argo deploy <app>` moves both.
-    targetRevision: 2d720aabb41f45e6828a859898022826f82256b0
+    targetRevision: ce16b5af8f04d552513876c8591e7f1cb4aaaadb
     path: deploy/chart
     helm:
       parameters:
+        # OFF: switched off for now. "false" = the chart renders nothing, Argo prunes the release; the
+        # namespace, its Secrets and the database stay. Back on: "true" (and enabled: true for its two gatus endpoints).
+        - name: enabled
+          value: "false"
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
-          value: sha-2d720aa
+          value: sha-ce16b5a
         - name: server.databaseSecret
           value: database
         - name: server.adminSecret
@@ -50,5 +54,8 @@ spec:
     automated:
       selfHeal: true
       prune: true
+      # Lets enabled: "false" (an empty render) prune the whole release; without it Argo refuses an
+      # automated sync that would delete every object ("auto-sync will wipe out all resources").
+      allowEmpty: true
     syncOptions:
       - CreateNamespace=true
