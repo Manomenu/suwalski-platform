@@ -31,10 +31,10 @@ spec:
     path: deploy/chart
     helm:
       parameters:
-        # OFF: switched off for now. "false" = the chart renders nothing, Argo prunes the release; the
-        # namespace, its Secrets and the database stay. Back on: "true" (and enabled: true for its gatus endpoint).
+        # "false" switches the deployment off: the chart renders nothing, Argo prunes the release; the
+        # namespace, its Secrets and the database stay. Off = also enabled: false for its two gatus endpoints.
         - name: enabled
-          value: "false"
+          value: "true"
         # Image of the commit in targetRevision — the other half of the deployment.
         - name: image.tag
           value: sha-5fd3fbf

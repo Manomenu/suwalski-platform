@@ -41,9 +41,6 @@ data:
       # ── platform ───────────────────────────────────────────────────────────────
       - name: tunel Cloudflare
         group: platforma
-        # Off while grzyby is switched off (enabled: "false" in argocd/apps/projects/grzyby.yaml): this
-        # check goes through its public address. Back on together with grzyby.
-        enabled: false
         # A public app behind the tunnel: if this answers, Cloudflare → tunnel → cloudflared →
         # Traefik works for every app. (Apps behind Access cannot be checked from outside
         # without logging in — their own checks below go through the cluster.)
@@ -109,8 +106,6 @@ data:
       # ── grzyby ──────────────────────────────────────────────────────────────────
       - name: grzyby — serwer
         group: grzyby
-        # Off while the deployment is switched off (enabled: "false" in argocd/apps/projects/grzyby.yaml).
-        enabled: false
         url: "http://grzyby-web.grzyby.svc.cluster.local/api/health"
         interval: 2m
         conditions:
